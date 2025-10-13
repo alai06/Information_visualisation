@@ -54,7 +54,6 @@ d3.csv("titles.csv").then(data => {
     const ageIndex = new Map(ageList.map((a, i) => [a, i]));
     const regionIndex = new Map(regionList.map((r, i) => [r, i]));
 
-    // Fill matrix with counts between age_certification and region
     data.forEach(d => {
         const a = (d.age_certification || "").trim();
         if (!a) return;
