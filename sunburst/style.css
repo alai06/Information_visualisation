@@ -1,0 +1,6 @@
+#sunburst-chart {
+    width: 2500px; 
+    height: 2500px; /* Correction ici */
+    display: block;
+    margin: 20px auto;
+}
