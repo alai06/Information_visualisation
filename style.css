@@ -1,0 +1,77 @@
+/* style.css */
+
+body {
+    background-color: #f8f9fc;
+    font-family: "Nunito", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.sidebar {
+    width: 225px;
+    min-height: 100vh;
+    background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+}
+
+.sidebar .nav-item .nav-link {
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+}
+
+.sidebar .nav-item .nav-link:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar .nav-item.active .nav-link {
+    color: #fff;
+    font-weight: 700;
+}
+
+.sidebar .sidebar-brand {
+    height: 4.375rem;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 800;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05rem;
+    z-index: 1;
+    color: #fff;
+}
+
+.sidebar .sidebar-divider {
+    border-top: 1px solid rgba(255,255,255,.15);
+}
+
+.sidebar .sidebar-heading {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+}
+
+.chart-container {
+    position: relative;
+    height: 60vh; /* Hauteur pour les graphiques */
+    width: 100%;
+    background-color: #f0f2f5;
+    border: 1px dashed #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-size: 1.2rem;
+    border-radius: .35rem;
+}
+
+.nav-tabs .nav-link {
+   border-bottom-width: 3px;
+}
