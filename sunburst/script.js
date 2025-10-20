@@ -1,14 +1,14 @@
 // --- CONFIGURATION ---
 const width = 1000;
 const maxRadius = 100;
-const csvPath = "/data/titles.csv"; 
+const csvPath = "/data/titles_update2.csv"; 
 
 // --- CHARGEMENT ET TRAITEMENT DES DONNÉES ---
 d3.csv(csvPath).then(data => {
     // 1. STRATIFICATION : Convertir les données tabulaires en hiérarchie D3.
     const root = d3.stratify()
-        .path(d => d.age_certification + '/' + d.genre + '/' + d.type)
-        .id(d => d.age_certification + '/' + d.genre + '/' + d.type)
+        .path(d => d.age_certification + '/' + d.type + '/' + d.genres)
+        .id(d => d.age_certification + '/' + d.type + '/' + d.genre)
         (data);
 
     // 2. COMPTAGE (Fréquence)

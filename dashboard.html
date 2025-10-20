@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Visualisations</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="d-flex">
+        <ul class="nav navbar-nav sidebar flex-column">
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
+                <div class="sidebar-brand-icon rotate-n-15">
+                    <i class="fas fa-chart-pie fa-2x"></i>
+                </div>
+                <div class="sidebar-brand-text mx-3">Mon Dashboard</div>
+            </a>
+
+            <hr class="sidebar-divider my-0">
+
+            <li class="nav-item active">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>Dashboard</span></a>
+            </li>
+
+            <hr class="sidebar-divider">
+
+            <div class="sidebar-heading px-3">
+                Interface
+            </div>
+
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-fw fa-cog"></i>
+                    <span>Composants</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-fw fa-wrench"></i>
+                    <span>Utilitaires</span>
+                </a>
+            </li>
+        </ul>
+        <div class="content-wrapper">
+            <div id="content" class="p-4">
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h1 class="h3 mb-0 text-gray-800">Visualisations de Données</h1>
+                    <a href="#" class="btn btn-primary shadow-sm"><i class="fas fa-download fa-sm text-white-50"></i> Générer un rapport</a>
+                </div>
+
+                <ul class="nav nav-tabs" id="vizTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="scatter-tab" data-toggle="tab" href="#scatter" role="tab" aria-controls="scatter" aria-selected="true">Scatterplot</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="treemap-tab" data-toggle="tab" href="#treemap" role="tab" aria-controls="treemap" aria-selected="false">Treemap</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="sunburst-tab" data-toggle="tab" href="#sunburst" role="tab" aria-controls="sunburst" aria-selected="false">Sunburst</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="choropleth-tab" data-toggle="tab" href="#choropleth" role="tab" aria-controls="choropleth" aria-selected="false">Chorogramme</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="vizTabsContent">
+                    <div class="tab-pane fade show active" id="scatter" role="tabpanel" aria-labelledby="scatter-tab">
+                        <div class="card shadow mt-3">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Nuage de points (Scatterplot)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <span>Votre graphique Scatterplot s'affichera ici</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="treemap" role="tabpanel" aria-labelledby="treemap-tab">
+                        <div class="card shadow mt-3">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Carte à cases (Treemap)</h6>
+                            </div>
+                            <div class="card-body">
+                               <div class="chart-container">
+                                    <span>Votre graphique Treemap s'affichera ici</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="sunburst" role="tabpanel" aria-labelledby="sunburst-tab">
+                        <div class="card shadow mt-3">
+                           <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Graphique en rayons de soleil (Sunburst)</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <span>Votre graphique Sunburst s'affichera ici</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="choropleth" role="tabpanel" aria-labelledby="choropleth-tab">
+                        <div class="card shadow mt-3">
+                           <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Carte Choroplèthe (Chorogramme)</h6>
+                            </div>
+                            <div class="card-body">
+                               <div class="chart-container">
+                                    <span>Votre carte choroplèthe s'affichera ici</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
