@@ -60,17 +60,18 @@ body {
 
 .chart-container {
     position: relative;
-    height: 60vh; /* Hauteur pour les graphiques */
+    height: 60vh;
     width: 100%;
-    background-color: #f0f2f5;
-    border: 1px dashed #ccc;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #aaa;
-    font-size: 1.2rem;
-    border-radius: .35rem;
+    overflow: hidden;
 }
+
+.chart-container svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+
 
 .nav-tabs .nav-link {
    border-bottom-width: 3px;

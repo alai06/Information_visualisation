@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="d-flex">
         <ul class="nav navbar-nav sidebar flex-column">
@@ -49,21 +51,41 @@
             <div id="content" class="p-4">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Visualisations de Données</h1>
-                    <a href="#" class="btn btn-primary shadow-sm"><i class="fas fa-download fa-sm text-white-50"></i> Générer un rapport</a>
+                    <a href="#" class="btn btn-primary shadow-sm"><i class="fas fa-download fa-sm text-white-50"></i>
+                        Générer un rapport</a>
+                </div>
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Filtres globaux</h6>
+                    </div>
+                    <div class="card-body d-flex align-items-center flex-wrap">
+                        <div class="mr-3">
+                            <label for="filter-type" class="font-weight-bold">Type de filtre :</label>
+                            <select id="filter-type" class="form-control">
+                                <option>Genres</option>
+                                <option>Regions</option>
+                            </select>
+                        </div>
+                        <div id="sub-menu" class="mr-3"></div>
+                    </div>
                 </div>
 
                 <ul class="nav nav-tabs" id="vizTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <a class="nav-link active" id="scatter-tab" data-toggle="tab" href="#scatter" role="tab" aria-controls="scatter" aria-selected="true">Scatterplot</a>
+                        <a class="nav-link active" id="scatter-tab" data-toggle="tab" href="#scatter" role="tab"
+                            aria-controls="scatter" aria-selected="true">Scatterplot</a>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <a class="nav-link" id="treemap-tab" data-toggle="tab" href="#treemap" role="tab" aria-controls="treemap" aria-selected="false">Treemap</a>
+                        <a class="nav-link" id="treemap-tab" data-toggle="tab" href="#treemap" role="tab"
+                            aria-controls="treemap" aria-selected="false">Treemap</a>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <a class="nav-link" id="sunburst-tab" data-toggle="tab" href="#sunburst" role="tab" aria-controls="sunburst" aria-selected="false">Sunburst</a>
+                        <a class="nav-link" id="sunburst-tab" data-toggle="tab" href="#sunburst" role="tab"
+                            aria-controls="sunburst" aria-selected="false">Sunburst</a>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <a class="nav-link" id="choropleth-tab" data-toggle="tab" href="#choropleth" role="tab" aria-controls="choropleth" aria-selected="false">Chorogramme</a>
+                        <a class="nav-link" id="chorddiagram-tab" data-toggle="tab" href="#chorddiagram" role="tab"
+                            aria-controls="chorddiagram" aria-selected="false">Chord diagram</a>
                     </li>
                 </ul>
 
@@ -86,7 +108,7 @@
                                 <h6 class="m-0 font-weight-bold text-primary">Carte à cases (Treemap)</h6>
                             </div>
                             <div class="card-body">
-                               <div class="chart-container">
+                                <div class="chart-container">
                                     <span>Votre graphique Treemap s'affichera ici</span>
                                 </div>
                             </div>
@@ -94,8 +116,9 @@
                     </div>
                     <div class="tab-pane fade" id="sunburst" role="tabpanel" aria-labelledby="sunburst-tab">
                         <div class="card shadow mt-3">
-                           <div class="card-header py-3">
-                                <h6 class="m-0 font-weight-bold text-primary">Graphique en rayons de soleil (Sunburst)</h6>
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Graphique en rayons de soleil (Sunburst)
+                                </h6>
                             </div>
                             <div class="card-body">
                                 <div class="chart-container">
@@ -104,26 +127,28 @@
                             </div>
                         </div>
                     </div>
-                    <div class="tab-pane fade" id="choropleth" role="tabpanel" aria-labelledby="choropleth-tab">
+                    <div class="tab-pane fade" id="chorddiagram" role="tabpanel" aria-labelledby="chorddiagram-tab">
                         <div class="card shadow mt-3">
-                           <div class="card-header py-3">
-                                <h6 class="m-0 font-weight-bold text-primary">Carte Choroplèthe (Chorogramme)</h6>
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Chord Diagram</h6>
                             </div>
                             <div class="card-body">
-                               <div class="chart-container">
-                                    <span>Votre carte choroplèthe s'affichera ici</span>
-                                </div>
+                                <div id="chord-chart" class="chart-container"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
-        </div>
+    </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="filters.js"></script>
+    <script src="/chord/chord.js"></script>
+
 </body>
+
 </html>
