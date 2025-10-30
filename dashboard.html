@@ -7,11 +7,42 @@
     <title>Dashboard de Visualisations</title>
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.0/nouislider.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 400px;
+        }
+
+        #movie-list {
+            border-left: 1px solid #ccc;
+            padding-left: 15px;
+            overflow-y: auto;
+            max-height: 700px;
+        }
+
+        #movie-items {
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .tooltip {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        #year-range-label {
+            font-weight: bold;
+        }
+    </style>
 </head>
 
 <body>
     <div class="d-flex">
+        <!-- Sidebar -->
         <ul class="nav navbar-nav sidebar flex-column">
             <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
                 <div class="sidebar-brand-icon rotate-n-15">
@@ -19,21 +50,17 @@
                 </div>
                 <div class="sidebar-brand-text mx-3">Mon Dashboard</div>
             </a>
-
             <hr class="sidebar-divider my-0">
-
             <li class="nav-item active">
                 <a class="nav-link" href="#">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
-                    <span>Dashboard</span></a>
+                    <span>Dashboard</span>
+                </a>
             </li>
-
             <hr class="sidebar-divider">
-
             <div class="sidebar-heading px-3">
                 Interface
             </div>
-
             <li class="nav-item">
                 <a class="nav-link" href="#">
                     <i class="fas fa-fw fa-cog"></i>
@@ -47,29 +74,30 @@
                 </a>
             </li>
         </ul>
-        <div class="content-wrapper">
+
+        <!-- Main Content -->
+        <div class="content-wrapper flex-fill">
             <div id="content" class="p-4">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
                     <h1 class="h3 mb-0 text-gray-800">Visualisations de Données</h1>
                     <a href="#" class="btn btn-primary shadow-sm"><i class="fas fa-download fa-sm text-white-50"></i>
                         Générer un rapport</a>
                 </div>
+
+                <!-- Filters Card -->
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold text-primary">Filtres globaux</h6>
                     </div>
-                    <div class="card-body d-flex align-items-center flex-wrap">
-                        <div class="mr-3">
-                            <label for="filter-type" class="font-weight-bold">Type de filtre :</label>
-                            <select id="filter-type" class="form-control">
-                                <option>Genres</option>
-                                <option>Regions</option>
-                            </select>
-                        </div>
+                    <div class="card-body">
                         <div id="sub-menu" class="mr-3"></div>
+                        <label class="font-weight-bold d-block mt-2 mb-1">Années</label>
+                        <div id="year-slider" class="mb-2"></div>
+                        <div id="year-range-label" class="mb-3"></div>
                     </div>
                 </div>
 
+                <!-- Tabs -->
                 <ul class="nav nav-tabs" id="vizTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <a class="nav-link active" id="scatter-tab" data-toggle="tab" href="#scatter" role="tab"
@@ -90,6 +118,7 @@
                 </ul>
 
                 <div class="tab-content" id="vizTabsContent">
+                    <!-- Scatter -->
                     <div class="tab-pane fade show active" id="scatter" role="tabpanel" aria-labelledby="scatter-tab">
                         <div class="card shadow mt-3">
                             <div class="card-header py-3">
@@ -102,6 +131,8 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Treemap -->
                     <div class="tab-pane fade" id="treemap" role="tabpanel" aria-labelledby="treemap-tab">
                         <div class="card shadow mt-3">
                             <div class="card-header py-3">
@@ -114,6 +145,8 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Sunburst -->
                     <div class="tab-pane fade" id="sunburst" role="tabpanel" aria-labelledby="sunburst-tab">
                         <div class="card shadow mt-3">
                             <div class="card-header py-3">
@@ -127,13 +160,23 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Chord Diagram -->
                     <div class="tab-pane fade" id="chorddiagram" role="tabpanel" aria-labelledby="chorddiagram-tab">
                         <div class="card shadow mt-3">
                             <div class="card-header py-3">
                                 <h6 class="m-0 font-weight-bold text-primary">Chord Diagram</h6>
                             </div>
                             <div class="card-body">
-                                <div id="chord-chart" class="chart-container"></div>
+                                <div class="d-flex" style="gap: 20px; height: 700px;">
+                                    <div id="chord-chart" style="flex: 2; min-width: 400px; height: 100%;"></div>
+                                    <div id="movie-list" style="flex: 1; height: 100%;">
+                                        <h5>Films sélectionnés</h5>
+                                        <ul id="movie-items">
+                                            <li>Cliquez sur un ruban pour voir les films ici</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -142,13 +185,15 @@
         </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="filters.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.0/nouislider.min.js"></script>
+
+    <!-- Dashboard scripts -->
+    <script src="dashboard.js"></script>
     <script src="/chord/chord.js"></script>
-
 </body>
-
 </html>
