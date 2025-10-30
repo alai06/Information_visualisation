@@ -6,6 +6,8 @@ let availableYears = [];
 let logScaleMode = false;
 let currentMoviesList = []; // Stocker la liste des films actuelle
 let currentSortMode = 'name'; // Mémoriser le tri actuel (par défaut : nom)
+let comparisonMode = false; // Mode comparaison activé/désactivé
+let comparisonYear = 2015; // Année de comparaison par défaut
 
 // Rendre showMovieModal accessible globalement
 window.showMovieModal = function(index) {
@@ -204,6 +206,7 @@ function initTreemap() {
     // Initialiser selectedYear avec currentYearSelection
     if (currentYearSelection && currentYearSelection.length === 2) {
         selectedYear = currentYearSelection[1]; // Prendre la fin de la plage
+        comparisonYear = Math.max(currentYearSelection[0], currentYearSelection[1] - 5); // 5 ans avant par défaut
     }
 
     // Créer les contrôles spécifiques au treemap
@@ -218,10 +221,13 @@ function initTreemap() {
         // Mettre à jour selectedYear avec la fin de la plage
         if (yearRange && yearRange.length === 2) {
             // Mettre à jour les limites du slider
-            const slider = document.getElementById('treemap-year-slider');
-            if (slider) {
-                slider.min = yearRange[0];
-                slider.max = yearRange[1];
+            const normalSlider = document.getElementById('treemap-year-slider-normal');
+            const compSlider1 = document.getElementById('treemap-year-slider');
+            const compSlider2 = document.getElementById('treemap-comparison-slider');
+            
+            if (normalSlider) {
+                normalSlider.min = yearRange[0];
+                normalSlider.max = yearRange[1];
                 
                 // Ajuster selectedYear si nécessaire
                 if (selectedYear < yearRange[0]) {
@@ -229,21 +235,54 @@ function initTreemap() {
                 } else if (selectedYear > yearRange[1]) {
                     selectedYear = yearRange[1];
                 }
-                slider.value = selectedYear;
+                normalSlider.value = selectedYear;
+                
+                // Mettre à jour les labels min/max sous le slider normal
+                const normalLabels = normalSlider.parentElement.querySelectorAll('.text-muted');
+                if (normalLabels.length >= 2) {
+                    normalLabels[0].textContent = yearRange[0];
+                    normalLabels[1].textContent = yearRange[1];
+                }
             }
             
-            // Mettre à jour les labels min/max
-            const marks = document.querySelector('#treemap-year-slider').parentElement.querySelector('.d-flex.justify-content-between');
-            if (marks) {
-                marks.innerHTML = `
-                    <small class="text-muted">${yearRange[0]}</small>
-                    <small class="text-muted">${yearRange[1]}</small>
-                `;
+            if (compSlider1) {
+                compSlider1.min = yearRange[0];
+                compSlider1.max = yearRange[1];
+                if (selectedYear < yearRange[0]) selectedYear = yearRange[0];
+                if (selectedYear > yearRange[1]) selectedYear = yearRange[1];
+                compSlider1.value = selectedYear;
+                
+                // Mettre à jour les labels min/max sous le slider 1
+                const labels1 = compSlider1.parentElement.querySelectorAll('.text-muted');
+                if (labels1.length >= 2) {
+                    labels1[0].textContent = yearRange[0];
+                    labels1[1].textContent = yearRange[1];
+                }
+            }
+            
+            if (compSlider2) {
+                compSlider2.min = yearRange[0];
+                compSlider2.max = yearRange[1];
+                if (comparisonYear < yearRange[0]) comparisonYear = yearRange[0];
+                if (comparisonYear > yearRange[1]) comparisonYear = yearRange[1];
+                compSlider2.value = comparisonYear;
+                
+                // Mettre à jour les labels min/max sous le slider 2
+                const labels2 = compSlider2.parentElement.querySelectorAll('.text-muted');
+                if (labels2.length >= 2) {
+                    labels2[0].textContent = yearRange[0];
+                    labels2[1].textContent = yearRange[1];
+                }
             }
             
             updateYearDisplay();
         }
-        drawTreemap(genres, regions, yearRange);
+        
+        if (comparisonMode) {
+            drawComparisonTreemap();
+        } else {
+            drawTreemap(genres, regions, yearRange);
+        }
     });
 }
 
@@ -261,6 +300,9 @@ function createTreemapControls() {
                 <h5 class="mb-0">Année sélectionnée: <span id="treemap-year-display" class="text-primary font-weight-bold">${selectedYear}</span></h5>
             </div>
             <div class="d-flex align-items-center" style="gap: 10px;">
+                <button id="treemap-compare-btn" class="btn btn-sm btn-info">
+                    <i class="fas fa-columns"></i> Comparer
+                </button>
                 <button id="treemap-play-btn" class="btn btn-sm btn-primary">
                     <i class="fas fa-play"></i> Lecture
                 </button>
@@ -272,11 +314,40 @@ function createTreemapControls() {
                 </button>
             </div>
         </div>
-        <div class="mt-3">
+        <div id="treemap-comparison-controls" class="mt-3" style="display: none;">
+            <div class="alert alert-info mb-2 py-2">
+                <i class="fas fa-info-circle"></i> Mode comparaison activé - Sélectionnez une deuxième année à comparer
+            </div>
+            <div class="d-flex align-items-center" style="gap: 15px;">
+                <div style="flex: 1;">
+                    <label class="mb-1 font-weight-bold" style="font-size: 0.85rem;">Année 1:</label>
+                    <input type="range" id="treemap-year-slider" class="custom-range" 
+                           min="${currentYearSelection[0]}" 
+                           max="${currentYearSelection[1]}" 
+                           value="${selectedYear}">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">${currentYearSelection[0]}</small>
+                        <small class="text-muted">${currentYearSelection[1]}</small>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <label class="mb-1 font-weight-bold" style="font-size: 0.85rem;">Année 2:</label>
+                    <input type="range" id="treemap-comparison-slider" class="custom-range" 
+                           min="${currentYearSelection[0]}" 
+                           max="${currentYearSelection[1]}" 
+                           value="${comparisonYear}">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">${currentYearSelection[0]}</small>
+                        <small class="text-muted">${currentYearSelection[1]}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="treemap-normal-controls" class="mt-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <small class="text-muted">Ligne du temps (année affichée)</small>
             </div>
-            <input type="range" id="treemap-year-slider" class="custom-range" 
+            <input type="range" id="treemap-year-slider-normal" class="custom-range" 
                    min="${currentYearSelection[0]}" 
                    max="${currentYearSelection[1]}" 
                    value="${selectedYear}">
@@ -377,17 +448,90 @@ function createTreemapControls() {
     `;
     rightColumn.appendChild(detailsPanel);
 
-    // Event listeners
-    document.getElementById('treemap-year-slider').addEventListener('input', (e) => {
-        selectedYear = parseInt(e.target.value);
-        isPlaying = false;
-        clearInterval(playInterval);
-        updatePlayButton();
-        updateYearDisplay();
-        drawTreemap(currentGenreSelection, currentRegionSelection, [currentYearSelection[0], selectedYear]);
+    // Event listeners pour le mode normal
+    const normalSlider = document.getElementById('treemap-year-slider-normal');
+    if (normalSlider) {
+        normalSlider.addEventListener('input', (e) => {
+            selectedYear = parseInt(e.target.value);
+            isPlaying = false;
+            clearInterval(playInterval);
+            updatePlayButton();
+            updateYearDisplay();
+            drawTreemap(currentGenreSelection, currentRegionSelection, [currentYearSelection[0], selectedYear]);
+        });
+    }
+
+    // Event listener pour le bouton de comparaison
+    document.getElementById('treemap-compare-btn').addEventListener('click', () => {
+        comparisonMode = !comparisonMode;
+        updateCompareButton();
+        
+        // Basculer l'affichage des contrôles
+        const normalControls = document.getElementById('treemap-normal-controls');
+        const comparisonControls = document.getElementById('treemap-comparison-controls');
+        
+        if (comparisonMode) {
+            normalControls.style.display = 'none';
+            comparisonControls.style.display = 'block';
+            
+            // Attacher les événements aux sliders de comparaison
+            const slider1 = document.getElementById('treemap-year-slider');
+            const slider2 = document.getElementById('treemap-comparison-slider');
+            
+            if (slider1) {
+                slider1.value = selectedYear;
+                slider1.addEventListener('input', (e) => {
+                    selectedYear = parseInt(e.target.value);
+                    updateYearDisplay();
+                    drawComparisonTreemap();
+                });
+            }
+            
+            if (slider2) {
+                slider2.value = comparisonYear;
+                slider2.addEventListener('input', (e) => {
+                    comparisonYear = parseInt(e.target.value);
+                    drawComparisonTreemap();
+                });
+            }
+            
+            drawComparisonTreemap();
+        } else {
+            normalControls.style.display = 'block';
+            comparisonControls.style.display = 'none';
+            
+            // Restaurer les statistiques normales
+            const filteredData = globalData.filter(d => {
+                const year = +d.release_year;
+                if (isNaN(year) || year < currentYearSelection[0] || year > selectedYear) return false;
+                
+                if (currentGenreSelection && !currentGenreSelection.includes("All")) {
+                    const itemGenres = (d.genres || "").replace(/[\[\]"']/g, "").split(",").map(g => g.trim()).filter(Boolean);
+                    if (!itemGenres.some(g => currentGenreSelection.includes(g))) return false;
+                }
+                
+                if (currentRegionSelection && !currentRegionSelection.includes("All")) {
+                    const itemRegions = (d.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean).filter(r => r !== "Unknown");
+                    if (itemRegions.length === 0 || !itemRegions.some(r => currentRegionSelection.includes(r))) return false;
+                } else {
+                    const itemRegions = (d.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean).filter(r => r !== "Unknown");
+                    if (itemRegions.length === 0) return false;
+                }
+                
+                return true;
+            });
+            
+            updateTreemapStats(filteredData);
+            drawTreemap(currentGenreSelection, currentRegionSelection, [currentYearSelection[0], selectedYear]);
+        }
     });
 
     document.getElementById('treemap-play-btn').addEventListener('click', () => {
+        if (comparisonMode) {
+            alert('Désactivez le mode comparaison pour utiliser la lecture automatique.');
+            return;
+        }
+        
         isPlaying = !isPlaying;
         
         if (isPlaying) {
@@ -402,7 +546,8 @@ function createTreemapControls() {
                 } else {
                     selectedYear = availableYears[currentIndex + 1];
                 }
-                document.getElementById('treemap-year-slider').value = selectedYear;
+                const slider = document.getElementById('treemap-year-slider-normal');
+                if (slider) slider.value = selectedYear;
                 updateYearDisplay();
                 drawTreemap(currentGenreSelection, currentRegionSelection, [currentYearSelection[0], selectedYear]);
             }, 800);
@@ -415,7 +560,11 @@ function createTreemapControls() {
     document.getElementById('treemap-log-btn').addEventListener('click', () => {
         logScaleMode = !logScaleMode;
         updateLogButton();
-        drawTreemap(currentGenreSelection, currentRegionSelection, currentYearSelection);
+        if (comparisonMode) {
+            drawComparisonTreemap();
+        } else {
+            drawTreemap(currentGenreSelection, currentRegionSelection, currentYearSelection);
+        }
     });
 
     document.getElementById('treemap-export-svg-btn').addEventListener('click', () => {
@@ -429,7 +578,26 @@ function createTreemapControls() {
 
 function updateYearDisplay() {
     const display = document.getElementById('treemap-year-display');
-    if (display) display.textContent = selectedYear;
+    if (display) {
+        if (comparisonMode) {
+            display.textContent = `${selectedYear} vs ${comparisonYear}`;
+        } else {
+            display.textContent = selectedYear;
+        }
+    }
+}
+
+function updateCompareButton() {
+    const btn = document.getElementById('treemap-compare-btn');
+    if (btn) {
+        if (comparisonMode) {
+            btn.className = 'btn btn-sm btn-warning';
+            btn.innerHTML = '<i class="fas fa-check"></i> Comparaison ON';
+        } else {
+            btn.className = 'btn btn-sm btn-info';
+            btn.innerHTML = '<i class="fas fa-columns"></i> Comparer';
+        }
+    }
 }
 
 function updatePlayButton() {
@@ -455,100 +623,318 @@ function updateLogButton() {
 }
 
 function exportTreemapAsSVG() {
-    // Récupérer le SVG du treemap
-    const svgElement = document.querySelector('#treemap-svg-container svg');
-    
-    if (!svgElement) {
-        alert('Aucun treemap à exporter. Veuillez d\'abord générer une visualisation.');
-        return;
+    if (comparisonMode) {
+        // Export en mode comparaison - créer un SVG avec les deux treemaps côte à côte
+        const svg1 = document.querySelector('#comparison-treemap-1 svg');
+        const svg2 = document.querySelector('#comparison-treemap-2 svg');
+        
+        if (!svg1 || !svg2) {
+            alert('Aucun treemap à exporter. Veuillez d\'abord générer une visualisation.');
+            return;
+        }
+        
+        // Calculer les statistiques pour l'affichage
+        const stats = calculateComparisonStats(selectedYear, comparisonYear);
+        
+        // Créer un nouveau SVG combiné
+        const combinedWidth = 800;
+        const combinedHeight = 620;
+        const combinedSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        combinedSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        combinedSVG.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        combinedSVG.setAttribute('width', combinedWidth);
+        combinedSVG.setAttribute('height', combinedHeight);
+        combinedSVG.setAttribute('viewBox', `0 0 ${combinedWidth} ${combinedHeight}`);
+        
+        // Ajouter les styles
+        const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+        styleElement.textContent = `
+            text {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            .genre-label {
+                font-weight: bold;
+                pointer-events: none;
+            }
+            .count-label {
+                font-size: 12px;
+                pointer-events: none;
+            }
+        `;
+        combinedSVG.appendChild(styleElement);
+        
+        // Ajouter un titre principal
+        const titleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        titleGroup.setAttribute('transform', 'translate(400, 25)');
+        
+        const mainTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        mainTitle.setAttribute('text-anchor', 'middle');
+        mainTitle.setAttribute('font-size', '18');
+        mainTitle.setAttribute('font-weight', 'bold');
+        mainTitle.setAttribute('fill', '#333');
+        mainTitle.textContent = `Netflix Treemap - Comparaison ${selectedYear} vs ${comparisonYear}`;
+        titleGroup.appendChild(mainTitle);
+        
+        const genreText = currentGenreSelection.includes('All') ? 'Tous les genres' : currentGenreSelection.join(', ');
+        const regionText = currentRegionSelection.includes('All') ? 'Toutes les régions' : currentRegionSelection.join(', ');
+        
+        const subtitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        subtitle.setAttribute('text-anchor', 'middle');
+        subtitle.setAttribute('y', '18');
+        subtitle.setAttribute('font-size', '12');
+        subtitle.setAttribute('fill', '#666');
+        subtitle.textContent = `${genreText} | ${regionText}`;
+        titleGroup.appendChild(subtitle);
+        
+        combinedSVG.appendChild(titleGroup);
+        
+        // Cloner et positionner le premier treemap (gauche)
+        const svg1Clone = svg1.cloneNode(true);
+        const g1 = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g1.setAttribute('transform', 'translate(10, 50)');
+        
+        // Ajouter un cadre et un titre pour le premier treemap
+        const rect1 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect1.setAttribute('x', '0');
+        rect1.setAttribute('y', '0');
+        rect1.setAttribute('width', '370');
+        rect1.setAttribute('height', '560');
+        rect1.setAttribute('fill', 'none');
+        rect1.setAttribute('stroke', '#007bff');
+        rect1.setAttribute('stroke-width', '2');
+        rect1.setAttribute('rx', '4');
+        g1.appendChild(rect1);
+        
+        const title1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title1.setAttribute('x', '185');
+        title1.setAttribute('y', '20');
+        title1.setAttribute('text-anchor', 'middle');
+        title1.setAttribute('font-size', '16');
+        title1.setAttribute('font-weight', 'bold');
+        title1.setAttribute('fill', '#007bff');
+        title1.textContent = `Année ${selectedYear}`;
+        g1.appendChild(title1);
+        
+        const count1Text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        count1Text.setAttribute('x', '185');
+        count1Text.setAttribute('y', '38');
+        count1Text.setAttribute('text-anchor', 'middle');
+        count1Text.setAttribute('font-size', '12');
+        count1Text.setAttribute('fill', '#666');
+        count1Text.textContent = `${stats.count1} titres`;
+        g1.appendChild(count1Text);
+        
+        // Ajouter le contenu du premier SVG
+        const g1Inner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g1Inner.setAttribute('transform', 'translate(5, 45)');
+        Array.from(svg1Clone.childNodes).forEach(child => {
+            if (child.nodeName === 'g') {
+                g1Inner.appendChild(child.cloneNode(true));
+            }
+        });
+        g1.appendChild(g1Inner);
+        combinedSVG.appendChild(g1);
+        
+        // Cloner et positionner le deuxième treemap (droite)
+        const svg2Clone = svg2.cloneNode(true);
+        const g2 = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g2.setAttribute('transform', 'translate(420, 50)');
+        
+        // Ajouter un cadre et un titre pour le deuxième treemap
+        const rect2 = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect2.setAttribute('x', '0');
+        rect2.setAttribute('y', '0');
+        rect2.setAttribute('width', '370');
+        rect2.setAttribute('height', '560');
+        rect2.setAttribute('fill', 'none');
+        rect2.setAttribute('stroke', '#28a745');
+        rect2.setAttribute('stroke-width', '2');
+        rect2.setAttribute('rx', '4');
+        g2.appendChild(rect2);
+        
+        const title2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        title2.setAttribute('x', '185');
+        title2.setAttribute('y', '20');
+        title2.setAttribute('text-anchor', 'middle');
+        title2.setAttribute('font-size', '16');
+        title2.setAttribute('font-weight', 'bold');
+        title2.setAttribute('fill', '#28a745');
+        title2.textContent = `Année ${comparisonYear}`;
+        g2.appendChild(title2);
+        
+        const count2Text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        count2Text.setAttribute('x', '185');
+        count2Text.setAttribute('y', '38');
+        count2Text.setAttribute('text-anchor', 'middle');
+        count2Text.setAttribute('font-size', '12');
+        count2Text.setAttribute('fill', '#666');
+        count2Text.textContent = `${stats.count2} titres`;
+        g2.appendChild(count2Text);
+        
+        // Ajouter le contenu du deuxième SVG
+        const g2Inner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g2Inner.setAttribute('transform', 'translate(5, 45)');
+        Array.from(svg2Clone.childNodes).forEach(child => {
+            if (child.nodeName === 'g') {
+                g2Inner.appendChild(child.cloneNode(true));
+            }
+        });
+        g2.appendChild(g2Inner);
+        combinedSVG.appendChild(g2);
+        
+        // Ajouter les statistiques de comparaison en bas
+        const statsGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        statsGroup.setAttribute('transform', 'translate(400, 600)');
+        
+        const arrow = stats.diff > 0 ? '↗' : (stats.diff < 0 ? '↘' : '→');
+        const color = stats.diff > 0 ? '#28a745' : (stats.diff < 0 ? '#dc3545' : '#6c757d');
+        
+        const statsText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        statsText.setAttribute('text-anchor', 'middle');
+        statsText.setAttribute('font-size', '14');
+        statsText.setAttribute('font-weight', 'bold');
+        statsText.setAttribute('fill', color);
+        statsText.textContent = `${arrow} ${stats.diff > 0 ? '+' : ''}${stats.diff} (${stats.percentChange}%)`;
+        statsGroup.appendChild(statsText);
+        
+        combinedSVG.appendChild(statsGroup);
+        
+        // Convertir le SVG combiné en string
+        const serializer = new XMLSerializer();
+        let svgString = serializer.serializeToString(combinedSVG);
+        
+        // Ajouter la déclaration XML
+        svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
+        
+        // Créer un Blob
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        
+        // Créer un lien de téléchargement
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Nom du fichier avec contexte
+        const fileName = `netflix_treemap_comparison_${selectedYear}_vs_${comparisonYear}_${new Date().toISOString().split('T')[0]}.svg`;
+        link.download = fileName;
+        
+        // Déclencher le téléchargement
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Libérer l'URL
+        URL.revokeObjectURL(url);
+        
+        // Message de confirmation
+        const btn = document.getElementById('treemap-export-svg-btn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Exporté !';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+        }, 2000);
+        
+    } else {
+        // Export en mode normal (un seul treemap)
+        const svgElement = document.querySelector('#treemap-svg-container svg');
+        
+        if (!svgElement) {
+            alert('Aucun treemap à exporter. Veuillez d\'abord générer une visualisation.');
+            return;
+        }
+        
+        // Cloner le SVG pour ne pas modifier l'original
+        const svgClone = svgElement.cloneNode(true);
+        
+        // Ajouter les styles inline pour que le SVG soit autonome
+        svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+        
+        // Ajouter un style pour les textes et formes
+        const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+        styleElement.textContent = `
+            text {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            .genre-label {
+                font-weight: bold;
+                pointer-events: none;
+            }
+            .count-label {
+                font-size: 12px;
+                pointer-events: none;
+            }
+        `;
+        svgClone.insertBefore(styleElement, svgClone.firstChild);
+        
+        // Ajouter un titre avec les informations de contexte
+        const titleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        titleGroup.setAttribute('transform', 'translate(10, 20)');
+        
+        const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        titleText.setAttribute('font-size', '16');
+        titleText.setAttribute('font-weight', 'bold');
+        titleText.setAttribute('fill', '#333');
+        titleText.textContent = `Netflix Treemap - Année ${selectedYear}`;
+        titleGroup.appendChild(titleText);
+        
+        const subtitleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        subtitleText.setAttribute('y', '18');
+        subtitleText.setAttribute('font-size', '12');
+        subtitleText.setAttribute('fill', '#666');
+        
+        const genreText = currentGenreSelection.includes('All') ? 'Tous les genres' : currentGenreSelection.join(', ');
+        const regionText = currentRegionSelection.includes('All') ? 'Toutes les régions' : currentRegionSelection.join(', ');
+        subtitleText.textContent = `${genreText} | ${regionText}`;
+        titleGroup.appendChild(subtitleText);
+        
+        svgClone.insertBefore(titleGroup, svgClone.firstChild);
+        
+        // Convertir le SVG en string
+        const serializer = new XMLSerializer();
+        let svgString = serializer.serializeToString(svgClone);
+        
+        // Ajouter la déclaration XML
+        svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
+        
+        // Créer un Blob
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        
+        // Créer un lien de téléchargement
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Nom du fichier avec contexte
+        const fileName = `netflix_treemap_${selectedYear}_${new Date().toISOString().split('T')[0]}.svg`;
+        link.download = fileName;
+        
+        // Déclencher le téléchargement
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Libérer l'URL
+        URL.revokeObjectURL(url);
+        
+        // Message de confirmation
+        const btn = document.getElementById('treemap-export-svg-btn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i> Exporté !';
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-primary');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+        }, 2000);
     }
-    
-    // Cloner le SVG pour ne pas modifier l'original
-    const svgClone = svgElement.cloneNode(true);
-    
-    // Ajouter les styles inline pour que le SVG soit autonome
-    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-    svgClone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-    
-    // Ajouter un style pour les textes et formes
-    const styleElement = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-    styleElement.textContent = `
-        text {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        .genre-label {
-            font-weight: bold;
-            pointer-events: none;
-        }
-        .count-label {
-            font-size: 12px;
-            pointer-events: none;
-        }
-    `;
-    svgClone.insertBefore(styleElement, svgClone.firstChild);
-    
-    // Ajouter un titre avec les informations de contexte
-    const titleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    titleGroup.setAttribute('transform', 'translate(10, 20)');
-    
-    const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    titleText.setAttribute('font-size', '16');
-    titleText.setAttribute('font-weight', 'bold');
-    titleText.setAttribute('fill', '#333');
-    titleText.textContent = `Netflix Treemap - Année ${selectedYear}`;
-    titleGroup.appendChild(titleText);
-    
-    const subtitleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    subtitleText.setAttribute('y', '18');
-    subtitleText.setAttribute('font-size', '12');
-    subtitleText.setAttribute('fill', '#666');
-    
-    const genreText = currentGenreSelection.includes('All') ? 'Tous les genres' : currentGenreSelection.join(', ');
-    const regionText = currentRegionSelection.includes('All') ? 'Toutes les régions' : currentRegionSelection.join(', ');
-    subtitleText.textContent = `${genreText} | ${regionText}`;
-    titleGroup.appendChild(subtitleText);
-    
-    svgClone.insertBefore(titleGroup, svgClone.firstChild);
-    
-    // Convertir le SVG en string
-    const serializer = new XMLSerializer();
-    let svgString = serializer.serializeToString(svgClone);
-    
-    // Ajouter la déclaration XML
-    svgString = '<?xml version="1.0" encoding="UTF-8"?>\n' + svgString;
-    
-    // Créer un Blob
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    
-    // Créer un lien de téléchargement
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    
-    // Nom du fichier avec contexte
-    const fileName = `netflix_treemap_${selectedYear}_${new Date().toISOString().split('T')[0]}.svg`;
-    link.download = fileName;
-    
-    // Déclencher le téléchargement
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Libérer l'URL
-    URL.revokeObjectURL(url);
-    
-    // Message de confirmation
-    const btn = document.getElementById('treemap-export-svg-btn');
-    const originalHTML = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-check"></i> Exporté !';
-    btn.classList.remove('btn-success');
-    btn.classList.add('btn-primary');
-    
-    setTimeout(() => {
-        btn.innerHTML = originalHTML;
-        btn.classList.remove('btn-primary');
-        btn.classList.add('btn-success');
-    }, 2000);
 }
 
 function drawWorldMapLegend(visibleRegions) {
@@ -733,6 +1119,435 @@ function drawWorldMapLegend(visibleRegions) {
                 .text(region);
         }
     });
+}
+
+function drawComparisonTreemap() {
+    const container = d3.select('#treemap-svg-container');
+    container.selectAll('*').remove();
+    
+    // Créer un conteneur principal pour les deux treemaps
+    const mainDiv = container.append('div')
+        .style('display', 'flex')
+        .style('gap', '10px')
+        .style('width', '100%')
+        .style('height', '550px');
+    
+    // Créer les deux treemaps côte-à-côte
+    const treemap1Div = mainDiv.append('div')
+        .attr('id', 'comparison-treemap-1')
+        .style('flex', '1')
+        .style('position', 'relative')
+        .style('border', '2px solid #007bff')
+        .style('border-radius', '8px')
+        .style('padding', '5px')
+        .style('background', 'rgba(0, 123, 255, 0.05)');
+    
+    const treemap2Div = mainDiv.append('div')
+        .attr('id', 'comparison-treemap-2')
+        .style('flex', '1')
+        .style('position', 'relative')
+        .style('border', '2px solid #28a745')
+        .style('border-radius', '8px')
+        .style('padding', '5px')
+        .style('background', 'rgba(40, 167, 69, 0.05)');
+    
+    // Ajouter les titres
+    treemap1Div.append('div')
+        .style('position', 'absolute')
+        .style('top', '10px')
+        .style('left', '10px')
+        .style('font-weight', 'bold')
+        .style('font-size', '16px')
+        .style('color', '#007bff')
+        .style('background', 'rgba(255, 255, 255, 0.9)')
+        .style('padding', '5px 10px')
+        .style('border-radius', '4px')
+        .style('z-index', '10')
+        .text(`Année ${selectedYear}`);
+    
+    treemap2Div.append('div')
+        .style('position', 'absolute')
+        .style('top', '10px')
+        .style('left', '10px')
+        .style('font-weight', 'bold')
+        .style('font-size', '16px')
+        .style('color', '#28a745')
+        .style('background', 'rgba(255, 255, 255, 0.9)')
+        .style('padding', '5px 10px')
+        .style('border-radius', '4px')
+        .style('z-index', '10')
+        .text(`Année ${comparisonYear}`);
+    
+    // Dessiner les deux treemaps
+    drawSingleTreemapInContainer('#comparison-treemap-1', selectedYear, currentGenreSelection, currentRegionSelection);
+    drawSingleTreemapInContainer('#comparison-treemap-2', comparisonYear, currentGenreSelection, currentRegionSelection);
+    
+    // Ajouter des statistiques de comparaison
+    const stats = calculateComparisonStats(selectedYear, comparisonYear);
+    updateComparisonStats(stats);
+}
+
+function drawSingleTreemapInContainer(containerId, year, selectedGenres, selectedRegions) {
+    // Filtrer les données pour cette année spécifique
+    let filteredData = globalData.filter(d => {
+        const itemYear = +d.release_year;
+        if (itemYear !== year) return false;
+        
+        // Filtrer par genres
+        if (selectedGenres && !selectedGenres.includes("All")) {
+            const itemGenres = (d.genres || "").replace(/[\[\]"']/g, "").split(",").map(g => g.trim()).filter(Boolean);
+            if (!itemGenres.some(g => selectedGenres.includes(g))) return false;
+        }
+        
+        // Filtrer par régions
+        if (selectedRegions && !selectedRegions.includes("All")) {
+            const itemRegions = (d.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean).filter(r => r !== "Unknown");
+            if (itemRegions.length === 0 || !itemRegions.some(r => selectedRegions.includes(r))) return false;
+        } else {
+            const itemRegions = (d.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean).filter(r => r !== "Unknown");
+            if (itemRegions.length === 0) return false;
+        }
+        
+        return true;
+    });
+    
+    const width = 340;
+    const height = 400;
+    
+    const container = d3.select(containerId);
+    container.selectAll('*').remove();
+
+    const svg = container.append('svg')
+        .attr('width', '100%')
+        .attr('height', height)
+        .attr('viewBox', [0, 0, width, height])
+        .attr('preserveAspectRatio', 'xMidYMid meet');
+
+    // Si pas de données, afficher un message
+    if (filteredData.length === 0) {
+        svg.append('text')
+            .attr('x', width / 2)
+            .attr('y', height / 2)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '16px')
+            .attr('fill', '#999')
+            .text('Aucun résultat');
+        return;
+    }
+
+    const hierarchy = { name: 'Netflix', children: [] };
+    const regionMap = new Map();
+
+    filteredData.forEach(item => {
+        let regions = (item.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean).filter(r => r !== "Unknown");
+        let genres = (item.genres || "").replace(/[\[\]"']/g, "").split(",").map(g => g.trim()).filter(Boolean).filter(g => g !== "Unknown");
+        
+        // Filtrer les régions selon la sélection globale
+        if (selectedRegions && !selectedRegions.includes("All")) {
+            regions = regions.filter(r => selectedRegions.includes(r));
+        }
+        
+        // Filtrer les genres selon la sélection globale
+        if (selectedGenres && !selectedGenres.includes("All")) {
+            genres = genres.filter(g => selectedGenres.includes(g));
+        }
+        
+        // Ignorer complètement les éléments sans région ou genre valide
+        if (regions.length === 0 || genres.length === 0) return;
+        
+        regions.forEach(region => {
+            if (!regionMap.has(region)) {
+                regionMap.set(region, new Map());
+            }
+            
+            genres.forEach(genre => {
+                const genreMap = regionMap.get(region);
+                if (!genreMap.has(genre)) {
+                    genreMap.set(genre, []);
+                }
+                genreMap.get(genre).push(item);
+            });
+        });
+    });
+
+    // Créer la hiérarchie complète avec genres
+    regionMap.forEach((genreMap, region) => {
+        const regionNode = { name: region, children: [] };
+
+        genreMap.forEach((items, genre) => {
+            const rawValue = items.length;
+            const displayValue = logScaleMode ? Math.log10(rawValue + 1) : rawValue;
+            
+            regionNode.children.push({
+                name: genre,
+                value: displayValue,
+                rawValue: rawValue,
+                items: items,
+                avgScore: d3.mean(items, d => +(d.imdb_score || d.tmdb_score || 0))
+            });
+        });
+
+        hierarchy.children.push(regionNode);
+    });
+
+    const colorScale = d3.scaleOrdinal()
+        .domain(['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania', 'Middle East', 'Central America'])
+        .range(['#e50914', '#f5c518', '#00b4d8', '#90e0ef', '#ff006e', '#8338ec', '#3a86ff', '#fb5607']);
+
+    // Créer un tooltip élégant
+    const tooltip = container.append('div')
+        .attr('class', 'treemap-tooltip-comp')
+        .style('position', 'absolute')
+        .style('visibility', 'hidden')
+        .style('background', 'linear-gradient(135deg, rgba(0,0,0,0.95) 0%, rgba(30,30,30,0.95) 100%)')
+        .style('color', 'white')
+        .style('padding', '12px 16px')
+        .style('border-radius', '8px')
+        .style('pointer-events', 'none')
+        .style('font-size', '14px')
+        .style('z-index', '10000')
+        .style('box-shadow', '0 4px 12px rgba(0,0,0,0.4)')
+        .style('border', '1px solid rgba(255,255,255,0.1)')
+        .style('min-width', '150px');
+
+    // Fonction pour dessiner le treemap (collapsed ou expanded)
+    function renderTreemap(expandedRegion = null) {
+        svg.selectAll('g').remove();
+        
+        const currentHierarchy = { name: 'Netflix', children: [] };
+        
+        hierarchy.children.forEach(regionNode => {
+            if (expandedRegion === regionNode.name) {
+                // Région survolée : afficher avec les genres
+                currentHierarchy.children.push(regionNode);
+            } else {
+                // Région non-survolée : afficher comme un seul bloc
+                const totalValue = d3.sum(regionNode.children, d => d.value);
+                const totalRawValue = d3.sum(regionNode.children, d => d.rawValue);
+                const genreCount = regionNode.children.length;
+                const avgScore = d3.mean(regionNode.children, d => d.avgScore);
+                
+                currentHierarchy.children.push({
+                    name: regionNode.name,
+                    value: totalValue,
+                    rawValue: totalRawValue,
+                    genreCount: genreCount,
+                    avgScore: avgScore,
+                    isCollapsed: true
+                });
+            }
+        });
+
+        const root = d3.hierarchy(currentHierarchy)
+            .sum(d => d.value || 0)
+            .sort((a, b) => b.value - a.value);
+
+        const treemap = d3.treemap()
+            .size([width, height])
+            .padding(2)
+            .round(true);
+
+        treemap(root);
+
+        const g = svg.append('g');
+
+        const cell = g.selectAll('g')
+            .data(root.leaves())
+            .join('g')
+            .attr('transform', d => `translate(${d.x0},${d.y0})`)
+            .style('cursor', 'pointer');
+
+        cell.append('rect')
+            .attr('width', d => d.x1 - d.x0)
+            .attr('height', d => d.y1 - d.y0)
+            .attr('fill', d => {
+                // Si c'est collapsed, utiliser la couleur de la région directement
+                if (d.data.isCollapsed) {
+                    return colorScale(d.data.name);
+                } else {
+                    return colorScale(d.parent.data.name);
+                }
+            })
+            .attr('opacity', 0.85)
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2)
+            .attr('rx', 4);
+
+        // Texte principal : nom de la région (collapsed) ou genre (expanded)
+        cell.append('text')
+            .attr('x', d => {
+                if (d.data.isCollapsed) {
+                    return (d.x1 - d.x0) / 2; // Centré pour les régions
+                } else {
+                    return 5; // Aligné à gauche pour les genres
+                }
+            })
+            .attr('y', d => {
+                if (d.data.isCollapsed) {
+                    return (d.y1 - d.y0) / 2 - 10; // Centré verticalement, légèrement au-dessus
+                } else {
+                    const width = d.x1 - d.x0;
+                    return width < 60 ? 20 : 20; // Position normale pour les genres
+                }
+            })
+            .attr('text-anchor', d => d.data.isCollapsed ? 'middle' : 'start')
+            .attr('dx', d => d.data.isCollapsed ? 0 : 0)
+            .attr('font-size', d => d.data.isCollapsed ? '14px' : '11px')
+            .attr('font-weight', 'bold')
+            .attr('fill', '#fff')
+            .text(d => {
+                const width = d.x1 - d.x0;
+                if (!d.data.isCollapsed && width < 60) return '';
+                return d.data.name;
+            });
+
+        // Texte secondaire : informations supplémentaires
+        cell.append('text')
+            .attr('x', d => d.data.isCollapsed ? (d.x1 - d.x0) / 2 : 5)
+            .attr('y', d => d.data.isCollapsed ? (d.y1 - d.y0) / 2 + 15 : 35)
+            .attr('text-anchor', d => d.data.isCollapsed ? 'middle' : 'start')
+            .attr('font-size', '10px')
+            .attr('fill', '#fff')
+            .attr('opacity', 0.95)
+            .text(d => {
+                const width = d.x1 - d.x0;
+                if (d.data.isCollapsed) {
+                    return `${d.data.rawValue} titres`;
+                } else {
+                    if (width < 80) return '';
+                    return `${d.data.rawValue} titres`;
+                }
+            });
+
+        // Texte tertiaire : genre count pour collapsed uniquement
+        cell.append('text')
+            .attr('x', d => (d.x1 - d.x0) / 2)
+            .attr('y', d => (d.y1 - d.y0) / 2 + 30)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '10px')
+            .attr('fill', '#fff')
+            .attr('opacity', 0.9)
+            .text(d => {
+                if (d.data.isCollapsed) {
+                    const width = d.x1 - d.x0;
+                    if (width < 100) return '';
+                    return `${d.data.genreCount} genres`;
+                }
+                return '';
+            });
+
+        // Événements de survol
+        let hoverTimeout = null;
+        
+        cell.on('mouseover', function(event, d) {
+            // Si c'est une région collapsed, on redessine en mode expanded
+            if (d.data.isCollapsed) {
+                renderTreemap(d.data.name);
+            } else {
+                // Pour les genres, afficher le tooltip après 0.5 seconde
+                hoverTimeout = setTimeout(() => {
+                    tooltip.style('visibility', 'visible')
+                        .html(`
+                            <div style="font-weight: bold; margin-bottom: 6px; font-size: 13px;">${d.data.name}</div>
+                            <div style="opacity: 0.9; font-size: 11px;">Région: ${d.parent.data.name}</div>
+                            <div style="opacity: 0.9; font-size: 11px; margin-top: 4px;">${d.data.rawValue} titres</div>
+                        `);
+                    
+                    // Obtenir les coordonnées du conteneur
+                    const containerRect = container.node().getBoundingClientRect();
+                    
+                    // Positionner le tooltip avec son coin supérieur gauche exactement à l'emplacement de la souris
+                    tooltip.style('top', (event.clientY - containerRect.top) + 'px')
+                           .style('left', (event.clientX - containerRect.left) + 'px');
+                }, 500); // Attendre 0.5 seconde
+                
+                // Effet hover visuel
+                d3.select(this).select('rect')
+                    .transition()
+                    .duration(200)
+                    .attr('opacity', 1)
+                    .attr('stroke-width', 3);
+            }
+        })
+        .on('mousemove', function(event, d) {
+            // Mettre à jour la position du tooltip si visible pour qu'il suive la souris exactement
+            if (!d.data.isCollapsed && tooltip.style('visibility') === 'visible') {
+                const containerRect = container.node().getBoundingClientRect();
+                tooltip.style('top', (event.clientY - containerRect.top) + 'px')
+                       .style('left', (event.clientX - containerRect.left) + 'px');
+            }
+        })
+        .on('mouseout', function(event, d) {
+            // Annuler le timeout si on sort avant 0.5 seconde
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+            }
+            
+            // Cacher le tooltip
+            tooltip.style('visibility', 'hidden');
+            
+            // Réinitialiser l'effet hover visuel pour les genres
+            if (!d.data.isCollapsed) {
+                d3.select(this).select('rect')
+                    .transition()
+                    .duration(200)
+                    .attr('opacity', 0.85)
+                    .attr('stroke-width', 2);
+            }
+        })
+        .on('click', (event, d) => {
+            if (d.data.items && d.data.items.length > 0) {
+                showTreemapDetails(d.data.name, d.parent.data.name, d.data.items);
+            }
+        });
+        
+        // Événement pour revenir à l'état collapsed quand on sort du SVG
+        svg.on('mouseleave', () => {
+            if (hoverTimeout) {
+                clearTimeout(hoverTimeout);
+                hoverTimeout = null;
+            }
+            tooltip.style('visibility', 'hidden');
+            renderTreemap(null);
+        });
+    }
+    
+    // Dessiner initialement en mode collapsed (toutes les régions)
+    renderTreemap(null);
+}function calculateComparisonStats(year1, year2) {
+    const data1 = globalData.filter(d => +d.release_year === year1);
+    const data2 = globalData.filter(d => +d.release_year === year2);
+    
+    return {
+        count1: data1.length,
+        count2: data2.length,
+        diff: data2.length - data1.length,
+        percentChange: data1.length > 0 ? ((data2.length - data1.length) / data1.length * 100).toFixed(1) : 'N/A'
+    };
+}
+
+function updateComparisonStats(stats) {
+    const statsDiv = document.getElementById('treemap-stats');
+    if (statsDiv) {
+        const arrow = stats.diff > 0 ? '↗' : (stats.diff < 0 ? '↘' : '→');
+        const color = stats.diff > 0 ? 'text-success' : (stats.diff < 0 ? 'text-danger' : 'text-secondary');
+        
+        statsDiv.innerHTML = `
+            <div>
+                <h4 class="text-primary mb-0">${stats.count1}</h4>
+                <small class="text-muted">Année ${selectedYear}</small>
+            </div>
+            <div>
+                <h4 class="${color} mb-0">${arrow} ${stats.diff > 0 ? '+' : ''}${stats.diff}</h4>
+                <small class="text-muted">${stats.percentChange}%</small>
+            </div>
+            <div>
+                <h4 class="text-success mb-0">${stats.count2}</h4>
+                <small class="text-muted">Année ${comparisonYear}</small>
+            </div>
+        `;
+    }
 }
 
 function drawTreemap(selectedGenres, selectedRegions, yearRange) {
@@ -1136,6 +1951,32 @@ function updateTreemapStats(filteredData) {
 }
 
 function updateTreemapStatsWithDisplayed(totalTitles, regionsCount, genresCount) {
+    // Restaurer le format HTML normal si on revient du mode comparaison
+    const statsDiv = document.getElementById('treemap-stats');
+    if (statsDiv) {
+        // Vérifier si on est en mode comparaison en regardant le contenu HTML
+        const hasComparisonFormat = statsDiv.innerHTML.includes('Année');
+        
+        if (hasComparisonFormat) {
+            // Restaurer le format normal
+            statsDiv.innerHTML = `
+                <div>
+                    <h4 class="text-primary mb-0" id="treemap-total-titles">${totalTitles}</h4>
+                    <small class="text-muted">Titres</small>
+                </div>
+                <div>
+                    <h4 class="text-primary mb-0" id="treemap-total-regions">${regionsCount}</h4>
+                    <small class="text-muted">Régions</small>
+                </div>
+                <div>
+                    <h4 class="text-primary mb-0" id="treemap-total-genres">${genresCount}</h4>
+                    <small class="text-muted">Genres</small>
+                </div>
+            `;
+            return;
+        }
+    }
+    
     const animateNumber = (elementId, newValue) => {
         const element = document.getElementById(elementId);
         if (!element) return;
