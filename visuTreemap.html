@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix TreeMap Interactive</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .year-display {
+            font-size: 1.5rem;
+            color: #e50914;
+            font-weight: bold;
+        }
+
+        .controls {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #e0e0e0;
+        }
+
+        select, input[type="range"] {
+            padding: 10px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        select option {
+            background: #16213e;
+            color: #fff;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            height: 8px;
+        }
+
+        .range-value {
+            font-size: 0.85rem;
+            color: #e50914;
+            margin-top: 5px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: #e50914;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: #b20710;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(229,9,20,0.4);
+        }
+
+        .treemap-container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        #treemap {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.95);
+            border: 2px solid #e50914;
+            padding: 15px;
+            border-radius: 10px;
+            pointer-events: none;
+            display: none;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .tooltip strong {
+            color: #e50914;
+            font-size: 1.1rem;
+        }
+
+        .details-panel {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            display: none;
+        }
+
+        .details-panel.active {
+            display: block;
+        }
+
+        .details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(229,9,20,0.5);
+        }
+
+        .details-header h2 {
+            font-size: 1.8rem;
+            color: #e50914;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: 2px solid #e50914;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .item-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(229,9,20,0.3);
+            border-color: #e50914;
+        }
+
+        .item-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #e50914;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-card .type {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(229,9,20,0.3);
+            border-radius: 5px;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+        }
+
+        .item-card .score {
+            font-size: 1.2rem;
+            color: #4ecca3;
+            font-weight: bold;
+        }
+
+        .item-card .description {
+            font-size: 0.85rem;
+            color: #ccc;
+            line-height: 1.4;
+            margin-top: 10px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .stats {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e50914;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .timeline {
+            margin-top: 20px;
+        }
+
+        .timeline-marks {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.5rem;
+            color: #e50914;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Netflix Content TreeMap - <span class="year-display" id="yearDisplay">2020</span></h1>
+
+        <div class="controls fade-in">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label>Type de contenu</label>
+                    <select id="typeFilter">
+                        <option value="all">Tous</option>
+                        <option value="MOVIE">Films</option>
+                        <option value="SHOW">Séries</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Région</label>
+                    <select id="regionFilter">
+                        <option value="all">Toutes les régions</option>
+                        <option value="North America">Amérique du Nord</option>
+                        <option value="Europe">Europe</option>
+                        <option value="Asia">Asie</option>
+                        <option value="South America">Amérique du Sud</option>
+                        <option value="Africa">Afrique</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Score minimum</label>
+                    <input type="range" id="scoreFilter" min="0" max="10" step="0.5" value="0">
+                    <div class="range-value" id="scoreValue">0</div>
+                </div>
+
+                <div class="filter-group">
+                    <label>Animation</label>
+                    <button id="playBtn">▶ Lecture</button>
+                </div>
+
+                <div class="filter-group">
+                    <label>Persistance des titres</label>
+                    <button id="persistenceBtn" style="background: #4ecca3;">✓ Activée</button>
+                </div>
+
+                <div class="filter-group">
+                    <label>Échelle logarithmique</label>
+                    <button id="logScaleBtn" style="background: #666;">✕ Désactivée</button>
+                </div>
+            </div>
+
+            <div class="timeline">
+                <label>Année: <span id="yearLabel">2020</span></label>
+                <input type="range" id="yearSlider" min="1945" max="2025" value="2020" style="width: 100%;">
+                <div class="timeline-marks">
+                    <span>1945</span>
+                    <span>2025</span>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalTitles">0</div>
+                    <div class="stat-label">Titres</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalRegions">0</div>
+                    <div class="stat-label">Régions</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalGenres">0</div>
+                    <div class="stat-label">Genres</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="treemap-container fade-in">
+            <svg id="treemap"></svg>
+        </div>
+
+        <div id="detailsPanel" class="details-panel">
+            <div class="details-header">
+                <h2 id="detailsTitle">Détails</h2>
+                <button class="close-btn" id="closeDetails">Fermer</button>
+            </div>
+            <div id="itemsGrid" class="items-grid"></div>
+        </div>
+
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        let selectedYear = 2020;
+        let isPlaying = false;
+        let playInterval = null;
+        let availableYears = [];
+        let persistenceMode = true; // Mode persistance activé par défaut
+        let logScaleMode = false; // Échelle logarithmique désactivée par défaut
+
+        const filters = {
+            type: 'all',
+            region: 'all',
+            minScore: 0
+        };
+
+        // Charger les données
+        async function loadData() {
+            // Charger le fichier CSV externe
+            Papa.parse('preprocessed.csv', {
+                download: true,
+                header: true,
+                dynamicTyping: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    allData = results.data.map(row => ({
+                        ...row,
+                        genres: parseArray(row.genres),
+                        production_countries: parseArray(row.production_countries),
+                        regions: parseArray(row.regions),
+                        imdb_score: parseFloat(row.imdb_score) || 0,
+                        tmdb_score: parseFloat(row.tmdb_score) || 0,
+                        runtime: parseInt(row.runtime) || 0
+                    }));
+
+                    availableYears = [...new Set(allData.map(d => d.release_year))]
+                        .filter(y => y && y >= 1945 && y <= 2025)
+                        .sort((a, b) => a - b);
+
+                    document.getElementById('yearSlider').min = availableYears[0];
+                    document.getElementById('yearSlider').max = availableYears[availableYears.length - 1];
+                    
+                    updateVisualization();
+                }
+            });
+        }
+
+        function parseArray(str) {
+            if (!str) return [];
+            try {
+                return JSON.parse(str.replace(/'/g, '"'));
+            } catch {
+                return [];
+            }
+        }
+
+        function filterData() {
+            // En mode persistance : prendre tous les films/séries sortis jusqu'à l'année sélectionnée
+            // En mode normal : prendre uniquement les films/séries de l'année sélectionnée
+            if (persistenceMode) {
+                filteredData = allData.filter(d => d.release_year <= selectedYear);
+            } else {
+                filteredData = allData.filter(d => d.release_year === selectedYear);
+            }
+
+            if (filters.type !== 'all') {
+                filteredData = filteredData.filter(d => d.type === filters.type);
+            }
+
+            if (filters.region !== 'all') {
+                filteredData = filteredData.filter(d => 
+                    d.regions && d.regions.includes(filters.region)
+                );
+            }
+
+            if (filters.minScore > 0) {
+                filteredData = filteredData.filter(d => 
+                    (d.imdb_score || 0) >= filters.minScore
+                );
+            }
+        }
+
+        function updateStats() {
+            // Animer les changements de nombres
+            const animateNumber = (elementId, newValue) => {
+                const element = document.getElementById(elementId);
+                const oldValue = parseInt(element.textContent) || 0;
+                
+                if (oldValue === newValue) return;
+                
+                const duration = 500;
+                const startTime = performance.now();
+                
+                const animate = (currentTime) => {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Easing function pour un effet plus smooth
+                    const easeProgress = progress < 0.5 
+                        ? 2 * progress * progress 
+                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    
+                    const current = Math.floor(oldValue + (newValue - oldValue) * easeProgress);
+                    element.textContent = current;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        element.textContent = newValue;
+                    }
+                };
+                
+                requestAnimationFrame(animate);
+            };
+            
+            const totalTitles = filteredData.length;
+            
+            const regions = new Set();
+            const genres = new Set();
+            
+            filteredData.forEach(item => {
+                if (item.regions) item.regions.forEach(r => regions.add(r));
+                if (item.genres) item.genres.forEach(g => genres.add(g));
+            });
+
+            animateNumber('totalTitles', totalTitles);
+            animateNumber('totalRegions', regions.size);
+            animateNumber('totalGenres', genres.size);
+        }
+
+        function createTreeMap() {
+            const width = 1000;
+            const height = 600;
+            
+            const svg = d3.select('#treemap');
+            svg.attr('width', width).attr('height', height);
+
+            // Supprimer le message "Aucun résultat" s'il existe
+            svg.select('.no-results-group').remove();
+
+            // Si aucune donnée filtrée, afficher un message vide
+            if (filteredData.length === 0) {
+                // Supprimer aussi le groupe de la treemap
+                svg.select('g.treemap-group').remove();
+                
+                const g = svg.append('g').attr('class', 'no-results-group');
+                
+                // Ajouter un message "Aucun résultat"
+                g.append('rect')
+                    .attr('x', width / 2 - 200)
+                    .attr('y', height / 2 - 60)
+                    .attr('width', 400)
+                    .attr('height', 120)
+                    .attr('fill', 'rgba(255, 255, 255, 0.1)')
+                    .attr('stroke', '#e50914')
+                    .attr('stroke-width', 2)
+                    .attr('rx', 15);
+                
+                g.append('text')
+                    .attr('x', width / 2)
+                    .attr('y', height / 2 - 10)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '24px')
+                    .attr('font-weight', 'bold')
+                    .attr('fill', '#e50914')
+                    .text('Aucun résultat');
+                
+                g.append('text')
+                    .attr('x', width / 2)
+                    .attr('y', height / 2 + 25)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '16px')
+                    .attr('fill', '#aaa')
+                    .text('Essayez de modifier les filtres');
+                
+                return;
+            }
+
+            const hierarchy = { name: 'Netflix', children: [] };
+            const regionMap = new Map();
+
+            filteredData.forEach(item => {
+                const regions = item.regions || ['Unknown'];
+                const genres = item.genres || ['Unknown'];
+                
+                regions.forEach(region => {
+                    if (!regionMap.has(region)) {
+                        regionMap.set(region, new Map());
+                    }
+                    
+                    genres.forEach(genre => {
+                        const genreMap = regionMap.get(region);
+                        if (!genreMap.has(genre)) {
+                            genreMap.set(genre, []);
+                        }
+                        genreMap.get(genre).push(item);
+                    });
+                });
+            });
+
+            regionMap.forEach((genreMap, region) => {
+                const regionNode = { name: region, children: [] };
+
+                genreMap.forEach((items, genre) => {
+                    const rawValue = items.length;
+                    // Appliquer l'échelle logarithmique si activée
+                    const displayValue = logScaleMode ? Math.log10(rawValue + 1) : rawValue;
+                    
+                    regionNode.children.push({
+                        name: genre,
+                        value: displayValue,
+                        rawValue: rawValue, // Garder la valeur originale pour l'affichage
+                        items: items,
+                        avgScore: d3.mean(items, d => d.imdb_score || d.tmdb_score || 0)
+                    });
+                });
+
+                hierarchy.children.push(regionNode);
+            });
+
+            const root = d3.hierarchy(hierarchy)
+                .sum(d => d.value || 0)
+                .sort((a, b) => b.value - a.value);
+
+            const treemap = d3.treemap()
+                .size([width, height])
+                .padding(2)
+                .round(true);
+
+            treemap(root);
+
+            const colorScale = d3.scaleOrdinal()
+                .domain([...regionMap.keys()])
+                .range(['#e50914', '#f5c518', '#00b4d8', '#90e0ef', '#ff006e', '#8338ec', '#3a86ff', '#fb5607']);
+
+            let g = svg.select('g');
+            if (g.empty()) {
+                g = svg.append('g');
+            }
+
+            const tooltip = d3.select('#tooltip');
+
+            // Utiliser une clé unique pour chaque cellule
+            const cell = g.selectAll('g.cell')
+                .data(root.leaves(), d => `${d.parent.data.name}-${d.data.name}`);
+
+            // Supprimer les anciennes cellules avec transition
+            cell.exit()
+                .transition()
+                .duration(600)
+                .attr('opacity', 0)
+                .remove();
+
+            // Ajouter les nouvelles cellules
+            const cellEnter = cell.enter()
+                .append('g')
+                .attr('class', 'cell')
+                .style('cursor', 'pointer')
+                .attr('opacity', 0);
+
+            cellEnter.append('rect')
+                .attr('rx', 4)
+                .attr('stroke', '#fff')
+                .attr('stroke-width', 2);
+
+            cellEnter.append('text')
+                .attr('class', 'genre-label')
+                .attr('x', 5)
+                .attr('y', 20)
+                .attr('font-size', '14px')
+                .attr('font-weight', 'bold')
+                .attr('fill', '#fff');
+
+            cellEnter.append('text')
+                .attr('class', 'count-label')
+                .attr('x', 5)
+                .attr('y', 40)
+                .attr('font-size', '12px')
+                .attr('fill', '#fff');
+
+            // Fusionner enter et update
+            const cellMerge = cellEnter.merge(cell);
+
+            // Animer les positions et tailles
+            cellMerge
+                .transition()
+                .duration(600)
+                .attr('transform', d => `translate(${d.x0},${d.y0})`)
+                .attr('opacity', 1);
+
+            cellMerge.select('rect')
+                .transition()
+                .duration(600)
+                .attr('width', d => d.x1 - d.x0)
+                .attr('height', d => d.y1 - d.y0)
+                .attr('fill', d => colorScale(d.parent.data.name))
+                .attr('opacity', 0.85);
+
+            // Mettre à jour les textes avec transition
+            cellMerge.select('.genre-label')
+                .transition()
+                .duration(600)
+                .text(d => {
+                    const width = d.x1 - d.x0;
+                    if (width < 60) return '';
+                    return d.data.name;
+                })
+                .attr('opacity', 1);
+
+            cellMerge.select('.count-label')
+                .transition()
+                .duration(600)
+                .text(d => {
+                    const width = d.x1 - d.x0;
+                    if (width < 60) return '';
+                    // Afficher la valeur originale, pas la valeur logarithmique
+                    const count = d.data.rawValue || d.data.value;
+                    return `${Math.round(count)} titres`;
+                })
+                .attr('opacity', 0.9);
+
+            // Ajouter les événements (seulement sur les nouvelles cellules)
+            cellMerge.on('mouseover', function(event, d) {
+                d3.select(this).select('rect')
+                    .transition()
+                    .duration(200)
+                    .attr('opacity', 1)
+                    .attr('stroke-width', 3);
+
+                tooltip.style('display', 'block')
+                    .style('left', (event.pageX + 15) + 'px')
+                    .style('top', (event.pageY - 10) + 'px')
+                    .html(`
+                        <strong>${d.data.name}</strong><br/>
+                        Région: ${d.parent.data.name}<br/>
+                        Titres: ${d.data.rawValue || Math.round(d.data.value)}<br/>
+                        Score moyen: ${d.data.avgScore ? d.data.avgScore.toFixed(1) : 'N/A'}
+                    `);
+            })
+            .on('mouseout', function() {
+                d3.select(this).select('rect')
+                    .transition()
+                    .duration(200)
+                    .attr('opacity', 0.85)
+                    .attr('stroke-width', 2);
+
+                tooltip.style('display', 'none');
+            })
+            .on('click', (event, d) => {
+                if (d.data.items && d.data.items.length > 0) {
+                    showDetails(d.data.name, d.parent.data.name, d.data.items);
+                }
+            });
+        }
+
+        function showDetails(genre, region, items) {
+            const panel = document.getElementById('detailsPanel');
+            const title = document.getElementById('detailsTitle');
+            const grid = document.getElementById('itemsGrid');
+
+            title.textContent = `${genre} - ${region}`;
+            
+            grid.innerHTML = items.slice(0, 12).map(item => `
+                <div class="item-card">
+                    <h3 title="${item.title}">${item.title}</h3>
+                    <span class="type">${item.type}</span>
+                    <div class="score">⭐ ${(item.imdb_score || item.tmdb_score || 0).toFixed(1)}</div>
+                    <div class="description">${item.description || 'Pas de description disponible'}</div>
+                </div>
+            `).join('');
+
+            panel.classList.add('active');
+            panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function updateVisualization() {
+            filterData();
+            updateStats();
+            createTreeMap();
+            document.getElementById('yearDisplay').textContent = selectedYear;
+            document.getElementById('yearLabel').textContent = selectedYear;
+        }
+
+        // Event listeners
+        document.getElementById('typeFilter').addEventListener('change', (e) => {
+            filters.type = e.target.value;
+            updateVisualization();
+        });
+
+        document.getElementById('regionFilter').addEventListener('change', (e) => {
+            filters.region = e.target.value;
+            updateVisualization();
+        });
+
+        document.getElementById('scoreFilter').addEventListener('input', (e) => {
+            filters.minScore = parseFloat(e.target.value);
+            document.getElementById('scoreValue').textContent = filters.minScore;
+            updateVisualization();
+        });
+
+        document.getElementById('yearSlider').addEventListener('input', (e) => {
+            selectedYear = parseInt(e.target.value);
+            isPlaying = false;
+            clearInterval(playInterval);
+            document.getElementById('playBtn').textContent = '▶ Lecture';
+            updateVisualization();
+        });
+
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            
+            if (isPlaying) {
+                document.getElementById('playBtn').textContent = '⏸ Pause';
+                playInterval = setInterval(() => {
+                    const currentIndex = availableYears.indexOf(selectedYear);
+                    if (currentIndex >= availableYears.length - 1) {
+                        selectedYear = availableYears[0];
+                        isPlaying = false;
+                        clearInterval(playInterval);
+                        document.getElementById('playBtn').textContent = '▶ Lecture';
+                    } else {
+                        selectedYear = availableYears[currentIndex + 1];
+                    }
+                    document.getElementById('yearSlider').value = selectedYear;
+                    updateVisualization();
+                }, 800); // Réduit à 800ms pour une animation plus fluide
+            } else {
+                document.getElementById('playBtn').textContent = '▶ Lecture';
+                clearInterval(playInterval);
+            }
+        });
+
+        document.getElementById('closeDetails').addEventListener('click', () => {
+            document.getElementById('detailsPanel').classList.remove('active');
+        });
+
+        document.getElementById('persistenceBtn').addEventListener('click', () => {
+            persistenceMode = !persistenceMode;
+            const btn = document.getElementById('persistenceBtn');
+            
+            if (persistenceMode) {
+                btn.textContent = '✓ Activée';
+                btn.style.background = '#4ecca3';
+            } else {
+                btn.textContent = '✕ Désactivée';
+                btn.style.background = '#e50914';
+            }
+            
+            updateVisualization();
+        });
+
+        document.getElementById('logScaleBtn').addEventListener('click', () => {
+            logScaleMode = !logScaleMode;
+            const btn = document.getElementById('logScaleBtn');
+            
+            if (logScaleMode) {
+                btn.textContent = '✓ Activée';
+                btn.style.background = '#ff6b35';
+            } else {
+                btn.textContent = '✕ Désactivée';
+                btn.style.background = '#666';
+            }
+            
+            updateVisualization();
+        });
+
+        // Initial load
+        loadData();
+    </script>
+</body>
+</html>
