@@ -150,12 +150,11 @@
                     <div class="tab-pane fade" id="sunburst" role="tabpanel" aria-labelledby="sunburst-tab">
                         <div class="card shadow mt-3">
                             <div class="card-header py-3">
-                                <h6 class="m-0 font-weight-bold text-primary">Graphique en rayons de soleil (Sunburst)
-                                </h6>
+                                <h6 class="m-0 font-weight-bold text-primary">Graphique en rayons de soleil (Sunburst)</h6>
                             </div>
                             <div class="card-body">
-                                <div class="chart-container">
-                                    <span>Votre graphique Sunburst s'affichera ici</span>
+                                <div class="chart-container" style="height: 1000px;">
+                                    <svg id="sunburst-chart"></svg>
                                 </div>
                             </div>
                         </div>
@@ -196,5 +195,6 @@
     <script src="dashboard.js"></script>
     <script src="/chord/chord.js"></script>
     <script src="/treemap/treemap.js"></script>
+    <script src="/sunburst/sunburst.js"></script>
 </body>
 </html>
