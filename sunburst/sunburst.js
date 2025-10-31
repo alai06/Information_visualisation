@@ -371,8 +371,8 @@ function showSunburstDetails(genre, ageCategory, type, items) {
 
 // ---------- DESSIN DU SUNBURST ----------
 function drawSunburst(root) {
-  const width = 1500;
-  const radius = width / 6;
+  const width = 1400;
+  const radius = width / 11;
 
   const svg = d3.select("#sunburst-chart")
     .attr("viewBox", [0, 0, width, width])
