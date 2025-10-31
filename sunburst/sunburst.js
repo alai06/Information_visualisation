@@ -24,7 +24,8 @@ window.showMovieModal = function(index) {
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
             display: none;
             justify-content: center;
             align-items: center;
@@ -42,15 +43,16 @@ window.showMovieModal = function(index) {
     
     const modalContent = document.createElement('div');
     modalContent.style.cssText = `
-        background: white;
-        border-radius: 15px;
-        padding: 30px;
-        max-width: 700px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 750px;
         width: 100%;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         position: relative;
+        color: white;
     `;
     
     const parseField = (field) => {
@@ -67,82 +69,93 @@ window.showMovieModal = function(index) {
     const score = +(movie.imdb_score || movie.tmdb_score || 0);
     
     modalContent.innerHTML = `
+        <style>
+            .modal-badge { 
+                background: rgba(255, 255, 255, 0.2); 
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-weight: 600;
+            }
+        </style>
+        
         <button id="close-modal" style="
             position: absolute;
-            top: 15px;
-            right: 15px;
-            background: #dc3545;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
             color: white;
-            border: none;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            font-size: 18px;
+            width: 45px;
+            height: 45px;
+            font-size: 24px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-            transition: all 0.3s ease;
-        " onmouseover="this.style.background='#c82333'; this.style.transform='rotate(90deg)';" onmouseout="this.style.background='#dc3545'; this.style.transform='rotate(0deg)';">
+            font-weight: 300;
+        ">
             ×
         </button>
         
-        <h2 style="color: #007bff; margin-bottom: 20px; padding-right: 40px; font-size: 1.8rem; font-weight: bold;">
+        <h2 style="color: white; margin-bottom: 25px; padding-right: 60px; font-size: 2rem; font-weight: 700; text-shadow: 2px 2px 8px rgba(0,0,0,0.3);">
             ${movie.title || 'Sans titre'}
         </h2>
         
-        <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
-            <span class="badge badge-${movie.type === 'MOVIE' ? 'primary' : 'success'}" style="font-size: 0.9rem; padding: 6px 12px;">
+        <div style="display: flex; gap: 12px; margin-bottom: 25px; flex-wrap: wrap; align-items: center;">
+            <span class="modal-badge" style="font-size: 0.95rem;">
                 ${movie.type || 'N/A'}
             </span>
-            <span style="color: #ffc107; font-size: 1.2rem; font-weight: bold;">
+            <span class="modal-badge" style="font-size: 1.1rem;">
                 ⭐ ${score.toFixed(1)} / 10
             </span>
-            <span class="badge badge-secondary" style="font-size: 0.9rem; padding: 6px 12px;">
+            <span class="modal-badge" style="font-size: 0.95rem;">
                 📅 ${movie.release_year || 'N/A'}
             </span>
         </div>
         
         ${genres.length > 0 ? `
-        <div style="margin-bottom: 15px;">
-            <strong style="color: #333; display: block; margin-bottom: 8px;">
-                <i class="fas fa-tags"></i> Genres:
+        <div style="margin-bottom: 20px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 12px; backdrop-filter: blur(10px);">
+            <strong style="display: block; margin-bottom: 10px; font-size: 1rem;">
+                <i class="fas fa-tags"></i> Genres
             </strong>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                ${genres.map(g => `<span class="badge badge-info" style="font-size: 0.85rem; padding: 4px 10px;">${g}</span>`).join('')}
+                ${genres.map(g => `<span class="modal-badge" style="font-size: 0.85rem;">${g}</span>`).join('')}
             </div>
         </div>
         ` : ''}
         
         ${regions.length > 0 ? `
-        <div style="margin-bottom: 15px;">
-            <strong style="color: #333; display: block; margin-bottom: 8px;">
-                <i class="fas fa-globe"></i> Régions:
+        <div style="margin-bottom: 20px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 12px; backdrop-filter: blur(10px);">
+            <strong style="display: block; margin-bottom: 10px; font-size: 1rem;">
+                <i class="fas fa-globe"></i> Régions
             </strong>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                ${regions.map(r => `<span class="badge badge-secondary" style="font-size: 0.85rem; padding: 4px 10px;">${r}</span>`).join('')}
+                ${regions.map(r => `<span class="modal-badge" style="font-size: 0.85rem;">${r}</span>`).join('')}
             </div>
         </div>
         ` : ''}
         
         ${movie.description ? `
-        <div style="margin-bottom: 15px;">
-            <strong style="color: #333; display: block; margin-bottom: 8px;">
-                <i class="fas fa-align-left"></i> Description:
+        <div style="margin-bottom: 20px; background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 12px; backdrop-filter: blur(10px);">
+            <strong style="display: block; margin-bottom: 10px; font-size: 1rem;">
+                <i class="fas fa-align-left"></i> Description
             </strong>
-            <p style="margin: 0; color: #555; line-height: 1.8; text-align: justify;">
+            <p style="margin: 0; line-height: 1.8; text-align: justify;">
                 ${movie.description}
             </p>
         </div>
         ` : ''}
         
         ${movie.runtime ? `
-        <div style="margin-bottom: 15px;">
-            <strong style="color: #333; display: inline-block; margin-right: 10px;">
+        <div style="background: rgba(255, 255, 255, 0.1); padding: 12px 15px; border-radius: 12px; backdrop-filter: blur(10px); display: inline-block;">
+            <strong style="margin-right: 10px;">
                 <i class="fas fa-clock"></i> Durée:
             </strong>
-            <span style="color: #555;">${movie.runtime} minutes</span>
+            <span>${movie.runtime} minutes</span>
         </div>
         ` : ''}
     `;
@@ -173,7 +186,7 @@ function mapToObject(map, name) {
 
 // ---------- CHARGEMENT & PREPARATION DES DONNÉES ----------
 d3.csv(CSV_PATH).then(raw => {
-  window.sunburstData.rawData = raw; // Stocker les données brutes
+  window.sunburstData.rawData = raw;
   
   const expanded = [];
   raw.forEach(d => {
@@ -226,47 +239,46 @@ function showSunburstDetails(genre, ageCategory, type, items) {
     let panel = document.getElementById('sunburst-details-panel');
     
     if (!panel) {
-        // Créer le panneau APRÈS le chart-container (pas dedans)
         const sunburstCardBody = document.querySelector('#sunburst .card-body');
         
         panel = document.createElement('div');
         panel.id = 'sunburst-details-panel';
         panel.className = 'p-3 mt-3';
         panel.style.cssText = `
-            background: rgba(0,0,0,0.05);
-            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-radius: 15px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
             display: none;
             flex-direction: column;
-            max-height: 400px;
+            max-height: 500px;
             overflow: hidden;
             width: 100%;
             flex-shrink: 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         `;
         
         panel.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center mb-2" style="flex-shrink: 0;">
-                <h5 id="sunburst-details-title" class="mb-0" style="font-size: 0.95rem;"></h5>
-                <button id="sunburst-close-details" class="btn btn-sm btn-secondary">
-                    <i class="fas fa-times"></i>
+            <div class="d-flex justify-content-between align-items-center mb-3" style="flex-shrink: 0;">
+                <h5 id="sunburst-details-title" class="mb-0" style="font-size: 1.1rem; font-weight: 700; color: #667eea;"></h5>
+                <button id="sunburst-close-details" class="btn btn-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; padding: 5px 15px; font-weight: 600;">
+                    <i class="fas fa-times"></i> Fermer
                 </button>
             </div>
-            <div class="text-center mb-2" style="flex-shrink: 0;">
-                <div class="font-weight-bold mb-2" style="font-size: 0.9rem;">Trier par:</div>
+            <div class="text-center mb-3" style="flex-shrink: 0;">
+                <div class="font-weight-bold mb-2" style="font-size: 0.95rem; color: #555;">Trier par:</div>
                 <div class="btn-group btn-group-sm" role="group">
-                    <button id="sunburst-sort-name" class="btn btn-outline-primary active">Nom</button>
-                    <button id="sunburst-sort-rating" class="btn btn-outline-primary">Note</button>
-                    <button id="sunburst-sort-date" class="btn btn-outline-primary">Date</button>
+                    <button id="sunburst-sort-name" class="btn btn-outline-primary active" style="border-radius: 8px 0 0 8px; font-weight: 600;">Nom</button>
+                    <button id="sunburst-sort-rating" class="btn btn-outline-primary" style="font-weight: 600;">Note</button>
+                    <button id="sunburst-sort-date" class="btn btn-outline-primary" style="border-radius: 0 8px 8px 0; font-weight: 600;">Date</button>
                 </div>
             </div>
-            <div id="sunburst-items-grid" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+            <div id="sunburst-items-grid" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px;"></div>
         `;
         
-        // Ajouter le panneau à la fin de la card-body (après le chart-container)
         if (sunburstCardBody) {
             sunburstCardBody.appendChild(panel);
         }
         
-        // Event listener pour fermer
         document.getElementById('sunburst-close-details').addEventListener('click', () => {
             panel.style.display = 'none';
         });
@@ -275,28 +287,28 @@ function showSunburstDetails(genre, ageCategory, type, items) {
     const title = document.getElementById('sunburst-details-title');
     const grid = document.getElementById('sunburst-items-grid');
     
-    title.textContent = `${type} - ${ageCategory} - ${genre} (${items.length})`;
+    title.textContent = `${type} • ${ageCategory} • ${genre} (${items.length})`;
     
     window.sunburstData.currentMoviesList = [...items];
     
     const displayMovies = (moviesList) => {
         grid.innerHTML = moviesList.map((item, index) => `
-            <div class="card" style="width: 100%; margin: 0; flex-shrink: 0;">
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-start mb-1">
-                        <h6 class="card-title mb-0" style="font-size: 0.85rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;" title="${item.title || 'Sans titre'}">${item.title || 'Sans titre'}</h6>
-                        <button class="btn btn-sm btn-outline-info ml-1" style="font-size: 0.65rem; padding: 2px 8px; white-space: nowrap;" onclick="showMovieModal(${index})">
-                            <i class="fas fa-info-circle"></i>
+            <div class="card" style="width: 100%; margin: 0; flex-shrink: 0; border-radius: 12px; overflow: hidden; border: none; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+                <div class="card-body p-3" style="background: white;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title mb-0" style="font-size: 0.95rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; color: #333;" title="${item.title || 'Sans titre'}">${item.title || 'Sans titre'}</h6>
+                        <button class="btn btn-sm ml-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; font-size: 0.7rem; padding: 4px 10px; border-radius: 8px; white-space: nowrap; font-weight: 600;" onclick="showMovieModal(${index})">
+                            <i class="fas fa-info-circle"></i> Détails
                         </button>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="badge badge-${item.type === 'MOVIE' ? 'primary' : 'success'}" style="font-size: 0.7rem; padding: 2px 6px;">${item.type || 'N/A'}</span>
-                        <span class="text-warning" style="font-size: 0.75rem; font-weight: bold;">⭐ ${(+(item.imdb_score || item.tmdb_score || 0)).toFixed(1)}</span>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge" style="background: linear-gradient(135deg, ${item.type === 'MOVIE' ? '#667eea' : '#48bb78'} 0%, ${item.type === 'MOVIE' ? '#764ba2' : '#38a169'} 100%); font-size: 0.75rem; padding: 4px 10px; border-radius: 8px; font-weight: 600;">${item.type || 'N/A'}</span>
+                        <span style="color: #f59e0b; font-size: 0.85rem; font-weight: 700;">⭐ ${(+(item.imdb_score || item.tmdb_score || 0)).toFixed(1)}</span>
                     </div>
-                    <div class="mb-1">
-                        <small class="text-muted" style="font-size: 0.7rem;">📅 ${item.release_year || 'N/A'}</small>
+                    <div class="mb-2">
+                        <small style="color: #666; font-size: 0.75rem; font-weight: 600;">📅 ${item.release_year || 'N/A'}</small>
                     </div>
-                    <p class="card-text mb-0" style="font-size: 0.7rem; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #666;">${item.description || 'Pas de description'}</p>
+                    <p class="card-text mb-0" style="font-size: 0.75rem; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #555;">${item.description || 'Pas de description disponible'}</p>
                 </div>
             </div>
         `).join('');
@@ -360,36 +372,66 @@ function showSunburstDetails(genre, ageCategory, type, items) {
 // ---------- DESSIN DU SUNBURST ----------
 function drawSunburst(root) {
   const width = 1500;
-  const radius = width / 8;
+  const radius = width / 6;
 
   const svg = d3.select("#sunburst-chart")
     .attr("viewBox", [0, 0, width, width])
     .attr("preserveAspectRatio", "xMidYMid meet")
-    .style("font", "12px sans-serif")
+    .style("font", "14px 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif")
     .style("width", "100%")
     .style("height", "auto")
     .style("max-width", "1500px")
     .style("max-height", "1500px")
     .style("display", "block")
-    .style("margin", "0 auto");
+    .style("margin", "0 auto")
+    .style("filter", "drop-shadow(0px 10px 30px rgba(0, 0, 0, 0.15))");
 
   svg.selectAll("*").remove();
+
+  const defs = svg.append("defs");
+  
+  const radialGradient = defs.append("radialGradient")
+    .attr("id", "sunburst-gradient")
+    .attr("cx", "50%")
+    .attr("cy", "50%")
+    .attr("r", "50%");
+  
+  radialGradient.append("stop")
+    .attr("offset", "0%")
+    .attr("stop-color", "#667eea")
+    .attr("stop-opacity", 0.1);
+  
+  radialGradient.append("stop")
+    .attr("offset", "100%")
+    .attr("stop-color", "#764ba2")
+    .attr("stop-opacity", 0.05);
 
   const g = svg.append("g")
     .attr("transform", `translate(${width/2},${width/2})`);
 
+  g.append("circle")
+    .attr("r", radius * 4)
+    .attr("fill", "url(#sunburst-gradient)")
+    .attr("opacity", 0.6);
+
   d3.partition().size([2 * Math.PI, root.height + 1])(root);
   root.each(d => d.current = d);
 
-  const color = d3.scaleOrdinal(d3.quantize(d3.interpolateRainbow, Math.max(3, (root.children || []).length + 1)));
+  const colorSchemes = {
+    'MOVIE': d3.scaleOrdinal()
+      .range(['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a']),
+    'SHOW': d3.scaleOrdinal()
+      .range(['#38ef7d', '#11998e', '#fa709a', '#fee140', '#30cfd0', '#a8edea'])
+  };
 
   const arc = d3.arc()
     .startAngle(d => d.x0)
     .endAngle(d => d.x1)
-    .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+    .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.008))
     .padRadius(radius * 1.5)
     .innerRadius(d => d.y0 * radius)
-    .outerRadius(d => d.y1 * radius - 1);
+    .outerRadius(d => d.y1 * radius - 1)
+    .cornerRadius(3);
 
   const path = g.append("g")
     .selectAll("path")
@@ -398,43 +440,60 @@ function drawSunburst(root) {
       .attr("fill", d => {
         let node = d;
         while (node.depth > 1) node = node.parent;
-        return color(node.data.name);
+        const type = node.data.name;
+        const colorScale = colorSchemes[type] || colorSchemes['MOVIE'];
+        return colorScale(d.data.name);
       })
-      .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.6 : 0.4) : 0)
+      .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.85 : 0.95) : 0)
       .attr("d", d => arc(d.current))
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 2)
       .style("cursor", "pointer");
 
-  path.filter(d => d.children)
-    .on("click", clicked);
-  
-  // Ajouter le clic sur les feuilles (genres)
-  path.filter(d => !d.children && d.depth === 3)
-    .on("click", (event, d) => {
-      event.stopPropagation();
-      
-      // Récupérer le chemin complet: type -> age_certification -> genre
-      const genreName = d.data.name;
-      const ageCategory = d.parent.data.name;
-      const typeName = d.parent.parent.data.name;
-      
-      // Filtrer les films correspondants
-      const matchingMovies = window.sunburstData.rawData.filter(movie => {
-        const movieType = movie.type || "Unknown";
-        const movieAge = movie.age_certification || "Not Rated";
-        const movieGenres = (movie.genres || "").replace(/[\[\]"']/g, "").split(",").map(g => g.trim());
+  path.on("mouseenter", function(event, d) {
+    d3.select(this)
+      .attr("fill-opacity", 1)
+      .attr("stroke-width", 3);
+  })
+  .on("mouseleave", function(event, d) {
+    d3.select(this)
+      .attr("fill-opacity", arcVisible(d.current) ? (d.children ? 0.85 : 0.95) : 0)
+      .attr("stroke-width", 2);
+  });
+
+  path.each(function(d) {
+    const element = d3.select(this);
+    
+    if (d.children) {
+      element.on("click", clicked);
+    }
+    else if (d.depth === 3) {
+      element.on("click", (event, d) => {
+        event.stopPropagation();
         
-        return movieType === typeName && 
-               movieAge === ageCategory && 
-               movieGenres.includes(genreName);
+        const genreName = d.data.name;
+        const ageCategory = d.parent.data.name;
+        const typeName = d.parent.parent.data.name;
+        
+        const matchingMovies = window.sunburstData.rawData.filter(movie => {
+          const movieType = movie.type || "Unknown";
+          const movieAge = movie.age_certification || "Not Rated";
+          const movieGenres = (movie.genres || "").replace(/[\[\]"']/g, "").split(",").map(g => g.trim());
+          
+          return movieType === typeName && 
+                 movieAge === ageCategory && 
+                 movieGenres.includes(genreName);
+        });
+        
+        if (matchingMovies.length > 0) {
+          showSunburstDetails(genreName, ageCategory, typeName, matchingMovies);
+        }
       });
-      
-      if (matchingMovies.length > 0) {
-        showSunburstDetails(genreName, ageCategory, typeName, matchingMovies);
-      }
-    });
+    }
+  });
 
   path.append("title")
-    .text(d => `${d.ancestors().map(a => a.data.name).reverse().join(" / ")}\n${d.value} titres`);
+    .text(d => `${d.ancestors().map(a => a.data.name).reverse().join(" → ")}\n${d.value} titre${d.value > 1 ? 's' : ''}`);
 
   const label = g.append("g")
     .attr("pointer-events", "none")
@@ -443,19 +502,38 @@ function drawSunburst(root) {
     .data(root.descendants().slice(1))
     .join("text")
       .attr("dy", "0.35em")
+      .attr("fill", "#333")
       .attr("fill-opacity", d => +labelVisible(d.current))
+      .attr("font-weight", "600")
+      .attr("font-size", d => d.depth === 1 ? "14px" : "12px")
+      .attr("text-shadow", "0 1px 3px rgba(255,255,255,0.8)")
       .attr("transform", d => labelTransform(d.current))
       .text(d => d.data.name);
 
   const parent = g.append("circle")
     .datum(root)
     .attr("r", radius)
-    .attr("fill", "none")
+    .attr("fill", "white")
+    .attr("stroke", "#667eea")
+    .attr("stroke-width", 4)
     .attr("pointer-events", "all")
+    .attr("cursor", "pointer")
+    .style("filter", "drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3))")
     .on("click", clicked);
 
+  const centerText = g.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", "0.35em")
+    .attr("font-size", "18px")
+    .attr("font-weight", "700")
+    .attr("fill", "#667eea")
+    .text("Cliquez pour explorer");
+
   function clicked(event, p) {
+    if (!p.children && p.depth === 3) return;
+    
     parent.datum(p.parent || root);
+    centerText.text(p.parent ? "← Retour" : "Cliquez pour explorer");
 
     root.each(d => d.target = {
       x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
@@ -464,29 +542,28 @@ function drawSunburst(root) {
       y1: Math.max(0, d.y1 - p.depth)
     });
 
-    const t = g.transition().duration(750);
+    const t = g.transition().duration(500);
 
     path.transition(t)
       .tween("data", d => {
         const i = d3.interpolate(d.current, d.target);
         return t => d.current = i(t);
       })
-      .filter(function(d) { return +this.getAttribute("fill-opacity") || arcVisible(d.target); })
-      .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.6 : 0.4) : 0)
-      .attrTween("d", d => () => arc(d.current));
+      .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.85 : 0.95) : 0)
+      .attrTween("d", d => () => arc(d.current))
+      .style("pointer-events", d => arcVisible(d.target) ? "auto" : "none");
 
-    label.filter(function(d) { return +this.getAttribute("fill-opacity") || labelVisible(d.target); })
-      .transition(t)
+    label.transition(t)
       .attr("fill-opacity", d => +labelVisible(d.target))
       .attrTween("transform", d => () => labelTransform(d.current));
   }
 
   function arcVisible(d) {
-    return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+    return d.y1 <= 4 && d.y0 >= 1 && (d.x1 - d.x0) > 0.001;
   }
 
   function labelVisible(d) {
-    return d.y1 <= 3 && d.y0 >= 1 && (d.x1 - d.x0) > 0.03;
+    return d.y1 <= 4 && d.y0 >= 1 && (d.x1 - d.x0) > 0.03;
   }
 
   function labelTransform(d) {
