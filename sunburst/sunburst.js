@@ -1,11 +1,12 @@
-const CSV_PATH = "/data/titles_update3.csv";
+const CSV_PATH = ".../preprocessed.csv";
 
 // Utiliser window pour éviter les conflits de déclaration
 if (!window.sunburstData) {
     window.sunburstData = {
         rawData: [],
         currentMoviesList: [],
-        currentSortMode: 'name'
+        currentSortMode: 'name',
+        currentFilters: { genres: null, regions: null, yearRange: [1900, 2025] }
     };
 }
 
@@ -65,7 +66,7 @@ window.showMovieModal = function(index) {
     };
     
     const genres = parseField(movie.genres);
-    const regions = parseField(movie.production_countries);
+    const regions = parseField(movie.regions);
     const score = +(movie.imdb_score || movie.tmdb_score || 0);
     
     modalContent.innerHTML = `
@@ -186,29 +187,108 @@ function mapToObject(map, name) {
 
 // ---------- CHARGEMENT & PREPARATION DES DONNÉES ----------
 d3.csv(CSV_PATH).then(raw => {
-  window.sunburstData.rawData = raw;
+  // ✅ EXPLOSER chaque film par genre (créer une ligne par genre)
+  const expandedData = [];
   
-  const expanded = [];
-  raw.forEach(d => {
-    const type = d.type || "Unknown";
-    const age = d.age_certification || "Not Rated";
-
-    const genresField = d.genres || d.genre || "";
+  raw.forEach(row => {
+    // ✅ Corriger les certifications "Not Rated"
+    let ageCertification = row.age_certification || "Not Rated";
+    if (ageCertification === "Not Rated" || ageCertification === "NOT_RATED" || ageCertification === "" || !ageCertification) {
+      ageCertification = (row.type === "SHOW") ? "TV-G" : "G";
+    }
+    
+    const genresField = row.genres || "";
     const genres = genresField
+      .replace(/[\[\]"']/g, "")
       .split(",")
-      .map(normalizeGenre)
-      .filter(g => g && g.length > 0);
-
-    const uniqueGenres = Array.from(new Set(genres));
-
-    if (uniqueGenres.length === 0) {
-      expanded.push({ type, age_certification: age, genre: "Unknown" });
+      .map(g => g.trim())
+      .filter(Boolean);
+    
+    if (genres.length === 0) {
+      // Si pas de genre, ajouter une ligne avec "Unknown"
+      expandedData.push({...row, genre: "Unknown", age_certification: ageCertification});
     } else {
-      uniqueGenres.forEach(g => {
-        expanded.push({ type, age_certification: age, genre: g });
+      // Créer une ligne par genre
+      genres.forEach(genre => {
+        expandedData.push({...row, genre: genre, age_certification: ageCertification});
       });
     }
   });
+  
+  console.log(`📊 Films originaux: ${raw.length} → Films expansés: ${expandedData.length}`);
+  window.sunburstData.rawData = expandedData;
+  
+  // Initialiser avec tous les filtres
+  buildAndDrawSunburst(null, null, [1900, 2025]);
+  
+  // ✅ ÉCOUTER les changements de filtres
+  document.addEventListener("filterChange", e => {
+    const { genres, regions, yearRange } = e.detail;
+    console.log("🔄 Filtres reçus dans sunburst:", { genres, regions, yearRange });
+    
+    // ✅ MÉMORISER le filtre de région
+    window.sunburstData.currentFilters = {
+      genres: genres,
+      regions: regions,
+      yearRange: yearRange
+    };
+    
+    // ✅ Construire le sunburst SANS filtre région
+    buildAndDrawSunburst(genres, null, yearRange);
+  });
+}).catch(err => {
+  console.error("Erreur chargement CSV:", err);
+  d3.select("#sunburst-chart")
+    .append("text")
+    .attr("x", 700)
+    .attr("y", 700)
+    .attr("text-anchor", "middle")
+    .text("Erreur chargement CSV — voir console");
+});
+
+// Fonction pour construire et dessiner le sunburst avec filtres
+function buildAndDrawSunburst(selectedGenres, selectedRegions, yearRange) {
+  console.log("\n=== 🎨 CONSTRUCTION DU SUNBURST ===");
+  console.log("Filtres appliqués:", { selectedGenres, selectedRegions: "IGNORÉ", yearRange });
+  
+  const filteredData = window.sunburstData.rawData.filter(d => {
+    const y = +d.release_year;
+    if (y < yearRange[0] || y > yearRange[1]) return false;
+    
+    // ✅ Filtrer par genre (maintenant c'est un seul genre par ligne)
+    if (selectedGenres && Array.isArray(selectedGenres) && selectedGenres.length > 0 && !selectedGenres.includes("All")) {
+      const hasGenre = selectedGenres.includes(d.genre);
+      if (!hasGenre) return false;
+    }
+    
+    return true;
+  });
+  
+  console.log(`✅ Films pour le sunburst: ${filteredData.length}`);
+  
+  if (filteredData.length === 0) {
+    const svg = d3.select("#sunburst-chart");
+    svg.selectAll("*").remove();
+    
+    const width = 1400;
+    svg.append("text")
+      .attr("x", width / 2)
+      .attr("y", width / 2)
+      .attr("text-anchor", "middle")
+      .attr("dominant-baseline", "middle")
+      .style("font-size", "18px")
+      .style("fill", "#667eea")
+      .style("font-weight", "700")
+      .text("Aucune donnée ne correspond aux filtres sélectionnés");
+    return;
+  }
+  
+  // ✅ Construire la hiérarchie - la certification est déjà corrigée
+  const expanded = filteredData.map(d => ({
+    type: d.type || "Unknown",
+    age_certification: d.age_certification, // ✅ Déjà corrigée lors du chargement
+    genre: d.genre || "Unknown"
+  }));
 
   const nested = d3.rollup(
     expanded,
@@ -223,19 +303,59 @@ d3.csv(CSV_PATH).then(raw => {
     .sum(d => d.value || 0)
     .sort((a, b) => b.value - a.value);
 
-  drawSunburst(root);
-}).catch(err => {
-  console.error("Erreur chargement CSV:", err);
-  d3.select("#sunburst-chart")
-    .append("text")
-    .attr("x", 700)
-    .attr("y", 700)
-    .attr("text-anchor", "middle")
-    .text("Erreur chargement CSV — voir console");
-});
+  drawSunburst(root, filteredData);
+}
 
-// Fonction pour afficher le panneau de détails
-function showSunburstDetails(genre, ageCategory, type, items) {
+// ✅ Fonction pour afficher le panneau de détails avec FILTRE RÉGION
+function showSunburstDetails(genre, ageCategory, type, allMovies) {
+    console.log(`\n=== 📋 AFFICHAGE LISTE DES FILMS ===`);
+    console.log(`Catégorie: ${type} • ${ageCategory} • ${genre}`);
+    console.log(`Films avant filtre région: ${allMovies.length}`);
+    
+    // ✅ Dédupliquer les films (car ils ont été expansés par genre)
+    const uniqueMoviesMap = new Map();
+    allMovies.forEach(movie => {
+      const key = movie.id + '_' + movie.title;
+      if (!uniqueMoviesMap.has(key)) {
+        uniqueMoviesMap.set(key, movie);
+      }
+    });
+    
+    let uniqueMovies = Array.from(uniqueMoviesMap.values());
+    console.log(`Films après déduplication: ${uniqueMovies.length}`);
+    
+    // ✅ RÉCUPÉRER le filtre région mémorisé
+    const { regions: selectedRegions } = window.sunburstData.currentFilters;
+    console.log(`Régions mémorisées:`, selectedRegions);
+    
+    let filteredMovies = uniqueMovies;
+    
+    // ✅ APPLIQUER le filtre région
+    if (selectedRegions && Array.isArray(selectedRegions) && selectedRegions.length > 0 && !selectedRegions.includes("All")) {
+      filteredMovies = uniqueMovies.filter(movie => {
+        const movieRegions = (movie.regions || "")
+          .replace(/[\[\]"']/g, "")
+          .split(",")
+          .map(r => r.trim())
+          .filter(Boolean);
+        
+        const hasRegion = selectedRegions.some(r => movieRegions.includes(r));
+        
+        if (!hasRegion) {
+          console.log(`❌ Exclus: "${movie.title}" - Régions: [${movieRegions.join(', ')}]`);
+        }
+        
+        return hasRegion;
+      });
+    }
+    
+    console.log(`Films après filtre région: ${filteredMovies.length}`);
+    
+    if (filteredMovies.length === 0) {
+      alert(`Aucun film trouvé pour ${type} • ${ageCategory} • ${genre} dans la région sélectionnée`);
+      return;
+    }
+    
     let panel = document.getElementById('sunburst-details-panel');
     
     if (!panel) {
@@ -287,9 +407,9 @@ function showSunburstDetails(genre, ageCategory, type, items) {
     const title = document.getElementById('sunburst-details-title');
     const grid = document.getElementById('sunburst-items-grid');
     
-    title.textContent = `${type} • ${ageCategory} • ${genre} (${items.length})`;
+    title.textContent = `${type} • ${ageCategory} • ${genre} (${filteredMovies.length})`;
     
-    window.sunburstData.currentMoviesList = [...items];
+    window.sunburstData.currentMoviesList = [...filteredMovies];
     
     const displayMovies = (moviesList) => {
         grid.innerHTML = moviesList.map((item, index) => `
@@ -370,7 +490,7 @@ function showSunburstDetails(genre, ageCategory, type, items) {
 }
 
 // ---------- DESSIN DU SUNBURST ----------
-function drawSunburst(root) {
+function drawSunburst(root, filteredData) {
   const width = 1400;
   const radius = width / 11;
 
@@ -417,12 +537,48 @@ function drawSunburst(root) {
   d3.partition().size([2 * Math.PI, root.height + 1])(root);
   root.each(d => d.current = d);
 
+  // ✅ AMÉLIORATION : Palettes de couleurs étendues
   const colorSchemes = {
     'MOVIE': d3.scaleOrdinal()
-      .range(['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a']),
+      .range([
+        '#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a',
+        '#fee140', '#30cfd0', '#a8edea', '#ff6a88', '#c471f5', '#12c2e9',
+        '#f857a6', '#ff5858', '#56ab2f', '#ee0979', '#7f7fd5', '#91eae4'
+      ]),
     'SHOW': d3.scaleOrdinal()
-      .range(['#38ef7d', '#11998e', '#fa709a', '#fee140', '#30cfd0', '#a8edea'])
+      .range([
+        '#38ef7d', '#11998e', '#fa709a', '#fee140', '#30cfd0', '#a8edea',
+        '#667eea', '#f093fb', '#4facfe', '#43e97b', '#764ba2', '#c471f5',
+        '#ff6a88', '#12c2e9', '#f857a6', '#ff5858', '#56ab2f', '#ee0979'
+      ])
   };
+
+  // ✅ NOUVELLE LOGIQUE : Assigner des couleurs uniques par niveau
+  const colorByLevel = new Map();
+  
+  root.descendants().slice(1).forEach(d => {
+    // Trouver le nœud de type (MOVIE/SHOW) pour ce descendant
+    let typeNode = d;
+    while (typeNode.depth > 1) typeNode = typeNode.parent;
+    const type = typeNode.data.name;
+    
+    // Créer une clé unique pour le niveau et le parent
+    const parentName = d.parent ? d.parent.data.name : 'root';
+    const levelKey = `${type}_depth${d.depth}_parent${parentName}`;
+    
+    if (!colorByLevel.has(levelKey)) {
+      colorByLevel.set(levelKey, new Map());
+    }
+    
+    const levelColors = colorByLevel.get(levelKey);
+    
+    // Assigner une couleur basée sur l'index du nœud dans son parent
+    if (!levelColors.has(d.data.name)) {
+      const colorScale = colorSchemes[type] || colorSchemes['MOVIE'];
+      const colorIndex = levelColors.size % colorScale.range().length;
+      levelColors.set(d.data.name, colorScale.range()[colorIndex]);
+    }
+  });
 
   const arc = d3.arc()
     .startAngle(d => d.x0)
@@ -438,11 +594,14 @@ function drawSunburst(root) {
     .data(root.descendants().slice(1))
     .join("path")
       .attr("fill", d => {
-        let node = d;
-        while (node.depth > 1) node = node.parent;
-        const type = node.data.name;
-        const colorScale = colorSchemes[type] || colorSchemes['MOVIE'];
-        return colorScale(d.data.name);
+        // ✅ Utiliser la couleur assignée par niveau
+        let typeNode = d;
+        while (typeNode.depth > 1) typeNode = typeNode.parent;
+        const type = typeNode.data.name;
+        const parentName = d.parent ? d.parent.data.name : 'root';
+        const levelKey = `${type}_depth${d.depth}_parent${parentName}`;
+        
+        return colorByLevel.get(levelKey).get(d.data.name);
       })
       .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.85 : 0.95) : 0)
       .attr("d", d => arc(d.current))
@@ -475,14 +634,15 @@ function drawSunburst(root) {
         const ageCategory = d.parent.data.name;
         const typeName = d.parent.parent.data.name;
         
-        const matchingMovies = window.sunburstData.rawData.filter(movie => {
+        // ✅ Filtrer par genre unique (maintenant c'est simple)
+        const matchingMovies = filteredData.filter(movie => {
           const movieType = movie.type || "Unknown";
-          const movieAge = movie.age_certification || "Not Rated";
-          const movieGenres = (movie.genres || "").replace(/[\[\]"']/g, "").split(",").map(g => g.trim());
+          const movieAge = movie.age_certification;
+          const movieGenre = movie.genre || "Unknown";
           
           return movieType === typeName && 
                  movieAge === ageCategory && 
-                 movieGenres.includes(genreName);
+                 movieGenre === genreName;
         });
         
         if (matchingMovies.length > 0) {
