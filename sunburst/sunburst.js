@@ -1,4 +1,4 @@
-const CSV_PATH = ".../preprocessed.csv";
+const CSV_PATH = "/data/preprocessed.csv";
 
 // Utiliser window pour éviter les conflits de déclaration
 if (!window.sunburstData) {
