@@ -66,7 +66,6 @@ Information_visualisation/
 │   └── treemap.js             # Visualisation treemap
 │
 ├── sunburst/
-│   ├── index.html             # Page standalone (optionnel)
 │   ├── style.css              # Styles sunburst
 │   └── sunburst.js            # Visualisation sunburst
 │
