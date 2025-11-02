@@ -44,24 +44,6 @@ Dashboard interactif de visualisation de données pour explorer et analyser un l
 - Liste de films interactive au clic
 - Coloration dynamique selon la sélection
 
-## 🛠️ Technologies Utilisées
-
-### Frontend
-- **HTML5/CSS3** : Structure et style
-- **Bootstrap 4.5.2** : Framework CSS responsive
-- **Font Awesome 5.15.3** : Icônes
-
-### Bibliothèques JavaScript
-- **D3.js v7** : Visualisations de données
-- **jQuery 3.5.1** : Manipulation DOM
-- **noUiSlider 15.6.0** : Sliders interactifs
-
-### Prétraitement des Données
-- **Python 3.12+**
-- **pandas** : Manipulation de données
-- **numpy** : Calculs numériques
-- **pycountry** : Gestion des codes pays
-
 ## 📦 Structure du Projet
 
 ```
@@ -144,6 +126,7 @@ Accédez à : `http://localhost:8000/dashboard.html`
 - Changez les axes et la taille des points avec les menus déroulants
 - Survolez les points pour voir les détails
 - Cliquez sur un point pour afficher une modal détaillée
+- Zoom avec la molette
 
 **Treemap :**
 - Activez le mode comparaison pour comparer deux années

@@ -323,6 +323,21 @@ function updateScatterPlayButton() {
     }
 }
 
+// Définir des échelles de couleurs globales et cohérentes
+const GLOBAL_REGION_COLORS = {
+    'Europe': '#4285F4',
+    'North America': '#EA4335',
+    'Asia': '#FBBC04',
+    'South America': '#34A853',
+    'Middle East': '#9C27B0',
+    'Africa': '#FF6D00',
+    'Oceania': '#00ACC1'
+};
+
+const GLOBAL_GENRE_COLORS = d3.scaleOrdinal()
+    .domain(globalGenres || [])
+    .range(d3.schemeCategory10);
+
 function drawScatterplot(selectedGenres, selectedRegions, year) {
     // Récupérer les options de visualisation
     const xAxisOption = document.getElementById('scatter-x-axis')?.value || 'imdb_votes';
@@ -634,21 +649,13 @@ function drawScatterplot(selectedGenres, selectedRegions, year) {
     let colorCategories = [];
     
     if (colorOption === 'region') {
-        colorCategories = [...new Set(filteredData.flatMap(d => 
-            (d.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean)
-        ))];
-        if (colorCategories.length === 0) colorCategories = ['Unknown'];
-        colorScale = d3.scaleOrdinal()
-            .domain(colorCategories)
-            .range(d3.schemeCategory10);
+        // Utiliser toutes les régions globales pour cohérence entre les années
+        colorCategories = globalRegions || [];
+        colorScale = (region) => GLOBAL_REGION_COLORS[region] || '#999999';
     } else if (colorOption === 'genre') {
-        colorCategories = [...new Set(filteredData.flatMap(d => 
-            (d.genres || "").replace(/[\[\]"']/g, "").split(",").map(g => g.trim()).filter(Boolean)
-        ))].slice(0, 10); // Limiter à 10 genres principaux
-        if (colorCategories.length === 0) colorCategories = ['Unknown'];
-        colorScale = d3.scaleOrdinal()
-            .domain(colorCategories)
-            .range(d3.schemeCategory10);
+        // Utiliser tous les genres globaux pour cohérence entre les années
+        colorCategories = globalGenres || [];
+        colorScale = GLOBAL_GENRE_COLORS;
     } else { // type
         colorCategories = ['MOVIE', 'SHOW'];
         colorScale = d3.scaleOrdinal()
@@ -1035,31 +1042,43 @@ function drawScatterplot(selectedGenres, selectedRegions, year) {
             .attr('d', path)
             .attr('fill', d => {
                 const region = d.properties.region;
-                const isVisible = colorCategories.includes(region);
-                return isVisible ? colorScale(region) : '#d0d0d0';
+                // Utiliser toujours les couleurs globales cohérentes
+                return GLOBAL_REGION_COLORS[region] || '#d0d0d0';
             })
-            .attr('opacity', d => colorCategories.includes(d.properties.region) ? 0.85 : 0.35)
+            .attr('opacity', d => {
+                // Vérifier si la région a des données dans l'année actuelle
+                const region = d.properties.region;
+                const hasData = filteredData.some(movie => {
+                    const regions = (movie.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean);
+                    return regions.includes(region);
+                });
+                return hasData ? 0.85 : 0.35;
+            })
             .attr('stroke', '#fff')
             .attr('stroke-width', 1.5)
             .style('cursor', 'pointer')
             .on('mouseover', function(event, d) {
                 const region = d.properties.region;
-                if (colorCategories.includes(region)) {
-                    d3.select(this)
-                        .attr('opacity', 1)
-                        .attr('stroke-width', 2.5);
-                    
-                    // Mettre en évidence les bulles de cette région
-                    g.selectAll(".bubble")
-                        .attr("opacity", data => {
-                            const regions = (data.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean);
-                            return regions.includes(region) ? 1 : 0.1;
-                        });
-                }
+                // Permettre l'interaction même si pas de données
+                d3.select(this)
+                    .attr('opacity', 1)
+                    .attr('stroke-width', 2.5);
+                
+                // Mettre en évidence les bulles de cette région
+                g.selectAll(".bubble")
+                    .attr("opacity", data => {
+                        const regions = (data.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean);
+                        return regions.includes(region) ? 1 : 0.1;
+                    });
             })
             .on('mouseout', function(event, d) {
+                const region = d.properties.region;
+                const hasData = filteredData.some(movie => {
+                    const regions = (movie.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean);
+                    return regions.includes(region);
+                });
                 d3.select(this)
-                    .attr('opacity', colorCategories.includes(d.properties.region) ? 0.85 : 0.35)
+                    .attr('opacity', hasData ? 0.85 : 0.35)
                     .attr('stroke-width', 1.5);
                 
                 // Restaurer toutes les bulles
@@ -1078,21 +1097,26 @@ function drawScatterplot(selectedGenres, selectedRegions, year) {
             'Middle East': [48, 28]
         };
         
+        // Afficher les labels pour toutes les régions (pas seulement celles avec données)
         Object.entries(labelPositions).forEach(([region, coords]) => {
-            if (colorCategories.includes(region)) {
-                const projected = projection(coords);
-                mapGroup.append('text')
-                    .attr('x', projected[0])
-                    .attr('y', projected[1])
-                    .attr('text-anchor', 'middle')
-                    .attr('font-size', '9px')
-                    .attr('font-weight', 'bold')
-                    .attr('fill', '#fff')
-                    .attr('stroke', '#000')
-                    .attr('stroke-width', 0.5)
-                    .attr('paint-order', 'stroke')
-                    .text(region);
-            }
+            const projected = projection(coords);
+            const hasData = filteredData.some(movie => {
+                const regions = (movie.regions || "").replace(/[\[\]"']/g, "").split(",").map(r => r.trim()).filter(Boolean);
+                return regions.includes(region);
+            });
+            
+            mapGroup.append('text')
+                .attr('x', projected[0])
+                .attr('y', projected[1])
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '9px')
+                .attr('font-weight', 'bold')
+                .attr('fill', '#fff')
+                .attr('stroke', '#000')
+                .attr('stroke-width', 0.5)
+                .attr('paint-order', 'stroke')
+                .attr('opacity', hasData ? 1 : 0.5)
+                .text(region);
         });
         
     } else {
