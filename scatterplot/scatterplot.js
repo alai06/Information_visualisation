@@ -327,10 +327,10 @@ function updateScatterPlayButton() {
 const GLOBAL_REGION_COLORS = {
     'Europe': '#4285F4',
     'North America': '#EA4335',
-    'Asia': '#FBBC04',
+    'Asia': '#7e5c00ff',
     'South America': '#34A853',
     'Middle East': '#9C27B0',
-    'Africa': '#FF6D00',
+    'Africa': '#FBBC04',
     'Oceania': '#00ACC1'
 };
 
